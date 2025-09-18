@@ -8,9 +8,6 @@ variable "suga" {
   })
 }
 
-variable "container_port" {
-  type    = number
-}
 
 variable "alb_arn" {
   type    = string
