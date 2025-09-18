@@ -1,0 +1,15 @@
+name: aws-iam-role
+type: identity
+identity_type: aws:iam:role
+icon: ./icon.svg
+deployment:
+  terraform: ./module
+inputs:
+  trusted_services:
+    type: list(string)
+    description: "AWS services allowed to assume this role (e.g. lambda.amazonaws.com, ecs-tasks.amazonaws.com). Defaults to Lambda, EC2, and ECS"
+  trusted_actions:
+    type: list(string)
+    description: "IAM actions that trusted services can perform with this role. Defaults to sts:AssumeRole"
+
+outputs: {}

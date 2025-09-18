@@ -1,0 +1,39 @@
+name: aws-lambda
+type: service
+icon: ./icon.svg
+required_identities:
+  - aws:iam:role
+capabilities:
+  - schedules
+deployment:
+  terraform: ./module
+runtime:
+  go_module: github.com/nitrictech/plugins/aws/lambda
+
+inputs:
+  architecture:
+    type: string
+    description: "CPU instruction set - x86_64 for Intel/AMD, arm64 for AWS Graviton2. Defaults to x86_64"
+  timeout:
+    type: number
+    description: "Maximum execution time in seconds before Lambda terminates the function. Defaults to 300 seconds, max 900"
+  memory:
+    type: number
+    description: "RAM in MB, directly affects CPU allocation and pricing. Defaults to 1024 MB, accepts 128-10240"
+  ephemeral_storage:
+    type: number
+    description: "Temporary disk space in MB for /tmp directory. Defaults to 1024 MB, max 10240"
+  environment:
+    type: map(string)
+    description: "Key-value pairs accessible as environment variables in your function code. Defaults to empty"
+  function_url_auth_type:
+    type: string
+    description: "Access control for function URLs - AWS_IAM requires signed requests, NONE allows public access. Defaults to AWS_IAM"
+  subnet_ids:
+    type: list(string)
+    description: "VPC subnet IDs to enable private network access to RDS, ElastiCache, etc. Defaults to none, runs in AWS-managed VPC"
+  security_group_ids:
+    type: list(string)
+    description: "Network traffic rules when running in VPC. Defaults to none, uses default VPC security group if subnets specified"
+
+outputs: {}

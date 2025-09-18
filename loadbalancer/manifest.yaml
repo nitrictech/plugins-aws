@@ -1,0 +1,28 @@
+name: aws-loadbalancer
+type: infra
+icon: ./icon.svg
+deployment:
+  terraform: ./module
+inputs:
+  load_balancer_type:
+    type: string
+    description: "Type of load balancer - application for HTTP/HTTPS traffic, network for TCP/UDP. Defaults to application"
+  name:
+    type: string
+    required: true
+    description: "Name identifier for the load balancer resource"
+  internal:
+    type: bool
+    description: "Create internal load balancer accessible only from VPC, or internet-facing for public access. Defaults to false (internet-facing)"
+  security_groups:
+    type: list(string)
+    required: true
+    description: "Security group IDs that control inbound traffic rules to the load balancer"
+  subnets:
+    type: list(string)
+    required: true
+    description: "Subnet IDs in different availability zones where load balancer nodes will be placed"
+
+outputs:
+  arn: 
+    type: string

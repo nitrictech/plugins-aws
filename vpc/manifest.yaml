@@ -1,0 +1,46 @@
+name: aws-vpc
+type: infra
+icon: ./icon.svg
+deployment:
+  terraform: ./module
+inputs:
+  name:
+    type: string
+    required: true
+    description: "Name identifier for the VPC and all associated resources"
+  networking:
+    type: object
+    description: "Network configuration including CIDR blocks and subnet ranges. Defaults to 10.0.0.0/16 with 3 private and 3 public subnets"
+  azs:
+    type: list(string)
+    description: "Availability zones for subnet placement. Uses all available AZs in region if not specified"
+  enable_nat_gateway:
+    type: bool
+    description: "Create NAT gateways for private subnet internet access, incurs hourly charges. Defaults to false"
+  enable_vpn_gateway:
+    type: bool
+    description: "Create VPN gateway for site-to-site VPN connections to on-premises networks. Defaults to false"
+  single_nat_gateway:
+    type: bool
+    description: "Use one NAT gateway for all private subnets instead of one per AZ, reduces costs but removes redundancy. Defaults to false"
+  default_security_group_ingress:
+    type: list(map(string))
+    description: "Inbound traffic rules for the default security group. Defaults to no inbound access"
+  default_security_group_egress:
+    type: list(map(string))
+    description: "Outbound traffic rules for the default security group. Defaults to allow all outbound traffic"
+  tags:
+    type: map(string)
+    description: "Metadata labels for resource organization. Applied at the VPC level for billing and management purposes. Defaults to empty"
+
+outputs:
+  vpc_id:
+    type: string
+  private_subnets:
+    type: list(string)
+  public_subnets:
+    type: list(string)
+  subnets:
+    type: list(string)
+  default_security_group_id:
+    type: string

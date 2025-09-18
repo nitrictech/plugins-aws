@@ -1,0 +1,41 @@
+name: aws-cloudfront
+type: entrypoint
+icon: ./icon.svg
+deployment:
+  terraform: ./module
+
+inputs:
+  custom_domain:
+    type: string
+    nullable: true
+    description: "Custom domain name for CloudFront distribution. Uses CloudFront domain if not specified"
+  custom_domain_is_root:
+    type: bool
+    description: "Whether the custom domain is the root domain for hosted zone lookup and record creation. Defaults to false"
+  waf_enabled:
+    type: bool
+    description: "Activate AWS Web Application Firewall for protection against common web exploits. Defaults to false"
+  waf_managed_rules:
+    type: list(object)
+    description: "AWS-managed rule sets for OWASP Top 10 and known malicious inputs protection. Defaults to CommonRuleSet and KnownBadInputsRuleSet"
+  geo_restriction_type:
+    type: string
+    description: "Block or allow specific countries - accepts none, whitelist, or blacklist. Defaults to none"
+  geo_restriction_locations:
+    type: list(string)
+    description: "ISO country codes like US, GB, CN for geographic access control. Defaults to empty list"
+  rate_limit_enabled:
+    type: bool
+    description: "Protect against DDoS by limiting requests per IP address. Defaults to true"
+  rate_limit_requests_per_5min:
+    type: number
+    description: "Maximum requests from single IP in 5-minute window. Defaults to 2000"
+  default_cache_policy_id:
+    type: string
+    nullable: true
+    description: "CloudFront cache policy ID for caching behavior. Uses AWS managed policy if not specified"
+  default_origin_request_policy_id:
+    type: string
+    description: "Origin request policy for forwarding headers and query strings. Defaults to AllViewerExceptHostHeader"
+
+outputs: {}

@@ -1,0 +1,16 @@
+name: aws-s3-bucket
+type: storage
+icon: ./icon.svg
+required_identities:
+  - aws:iam:role
+deployment:
+  terraform: ./module
+runtime:
+  go_module: github.com/nitrictech/plugins/aws/s3
+
+inputs:
+  tags:
+    type: map(string)
+    description: "Metadata labels for resource organization. Applied at the bucket level for billing and management purposes. Defaults to empty"
+
+outputs: {}
