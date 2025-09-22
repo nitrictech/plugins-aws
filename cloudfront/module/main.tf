@@ -407,8 +407,8 @@ resource "aws_cloudfront_distribution" "distribution" {
       # fargate provides "/<service-name>", add configured base_path if present
       origin_path = try(
         origin.value.base_path != null && origin.value.base_path != "" ?
-          "${origin.value.resources["aws_lb_target_group:path"]}/${trimprefix(origin.value.base_path, "/")}" :
-          origin.value.resources["aws_lb_target_group:path"],
+          "${origin.value.resources["aws_lb:path"]}/${trimprefix(origin.value.base_path, "/")}" :
+          origin.value.resources["aws_lb:path"],
         ""
       )
       vpc_origin_config {
