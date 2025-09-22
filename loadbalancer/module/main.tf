@@ -35,8 +35,8 @@ resource "aws_lb_listener" "http" {
 
 # Allow HTTP traffic from internet
 resource "aws_security_group_rule" "http_ingress" {
-  for_each          = var.security_groups
-  security_group_id = each.value
+  count             = count(var.security_groups)
+  security_group_id = var.security_groups[count.index]
   from_port         = local.listener_port
   to_port           = local.listener_port
   protocol          = "tcp"
@@ -46,8 +46,8 @@ resource "aws_security_group_rule" "http_ingress" {
 
 # Allow HTTP traffic from specified prefix lists
 resource "aws_security_group_rule" "prefix_list_ingress" {
-  for_each          = var.security_groups
-  security_group_id = each.value
+  count          = count(var.security_groups)
+  security_group_id = var.security_groups[count.index]
   from_port         = local.listener_port
   to_port           = local.listener_port
   protocol          = "tcp"
