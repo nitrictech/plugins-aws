@@ -6,7 +6,7 @@ required_identities:
 deployment:
   terraform: ./module
 runtime:
-  go_module: github.com/nitrictech/plugins/aws/fargate
+  go_module: github.com/nitrictech/plugins-aws/fargate
 
 inputs:
   alb_arn:

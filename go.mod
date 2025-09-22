@@ -1,4 +1,4 @@
-module github.com/nitrictech/plugins/aws
+module github.com/nitrictech/plugins-aws
 
 go 1.24.4
 

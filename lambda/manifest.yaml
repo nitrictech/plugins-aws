@@ -8,7 +8,7 @@ capabilities:
 deployment:
   terraform: ./module
 runtime:
-  go_module: github.com/nitrictech/plugins/aws/lambda
+  go_module: github.com/nitrictech/plugins-aws/lambda
 
 inputs:
   architecture:

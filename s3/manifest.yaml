@@ -6,7 +6,7 @@ required_identities:
 deployment:
   terraform: ./module
 runtime:
-  go_module: github.com/nitrictech/plugins/aws/s3
+  go_module: github.com/nitrictech/plugins-aws/s3
 
 inputs:
   tags:
