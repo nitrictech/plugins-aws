@@ -94,12 +94,9 @@ data "aws_ec2_managed_prefix_list" "cloudfront" {
 
 # Allow CloudFront to access the load balancer on port 80 (shared listener)
 resource "aws_security_group_rule" "alb_http_ingress" {
-  for_each = toset([
-    for origin in local.vpc_origins :
-    origin.resources["aws_lb:security_group"]
-  ])
+  for_each = local.vpc_origins
 
-  security_group_id = each.value
+  security_group_id = each.value.resources["aws_lb:security_group"]
   from_port         = 80
   to_port           = 80
   protocol          = "tcp"
