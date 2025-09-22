@@ -516,11 +516,15 @@ resource "aws_cloudfront_distribution" "distribution" {
     target_origin_id = "${keys(local.default_origin)[0]}"
     viewer_protocol_policy = "redirect-to-https"
 
-    # Add Lambda@Edge for auth preservation and webhook signing
-    lambda_function_association {
-      event_type   = "origin-request"
-      lambda_arn   = aws_lambda_function.origin_request.qualified_arn
-      include_body = true
+    # Add Lambda@Edge for auth preservation and webhook signing (only if not a Lambda origin)
+    dynamic "lambda_function_association" {
+      for_each = contains(keys(local.default_origin[keys(local.default_origin)[0]].resources), "aws_lambda_function") ? [] : [1]
+
+      content {
+        event_type   = "origin-request"
+        lambda_arn   = aws_lambda_function.origin_request.qualified_arn
+        include_body = true
+      }
     }
 
     # Legacy configuration for custom cache behavior
