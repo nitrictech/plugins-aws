@@ -42,7 +42,6 @@ resource "aws_security_group_rule" "http_ingress" {
   protocol          = "tcp"
   type              = "ingress"
   cidr_blocks       = var.internal ? [] : ["0.0.0.0/0"]
-  source_security_group_id = var.internal ? var.security_groups[0] : null
 }
 
 # Allow HTTP traffic from specified prefix lists
