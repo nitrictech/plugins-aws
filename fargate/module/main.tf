@@ -187,6 +187,7 @@ resource "aws_lb_target_group" "service" {
 # Reference the shared HTTP listener created by the loadbalancer module
 data "aws_lb_listener" "shared_http" {
   load_balancer_arn = var.alb_arn
+  port = 80
 }
 
 # Create listener rule for this service's target group
