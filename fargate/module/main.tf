@@ -184,5 +184,26 @@ resource "aws_lb_target_group" "service" {
   }
 }
 
+# Reference the shared HTTP listener created by the loadbalancer module
+data "aws_lb_listener" "shared_http" {
+  load_balancer_arn = var.alb_arn
+}
+
+# Create listener rule for this service's target group
+resource "aws_lb_listener_rule" "service" {
+  listener_arn = data.aws_lb_listener.shared_http.arn
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.service.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/${var.suga.name}/*"]
+    }
+  }
+}
+
 
 

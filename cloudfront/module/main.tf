@@ -21,10 +21,6 @@ locals {
     for k, v in var.suga.origins : k => v
     if contains(keys(v.resources), "aws_lb")
   }
-  # Get unique ALBs from vpc_origins to create listeners
-  unique_albs = toset([
-    for origin in local.vpc_origins : origin.resources["aws_lb"]
-  ])
 }
 
 resource "aws_cloudfront_vpc_origin" "vpc_origin" {
@@ -33,7 +29,8 @@ resource "aws_cloudfront_vpc_origin" "vpc_origin" {
   vpc_origin_endpoint_config {
     name = each.key
     arn = each.value.resources["aws_lb"]
-    http_port = 80  # Use standard HTTP port for shared listener
+    # Use standard HTTP port for shared listener
+    http_port = 80  
     # Doesn't matter what we set this to, it's not used
     # But 0 is not a legal value
     https_port = 443
@@ -46,63 +43,7 @@ resource "aws_cloudfront_vpc_origin" "vpc_origin" {
   }
 }
 
-# Create shared HTTP listeners for ALBs that need them
-resource "aws_lb_listener" "shared_http" {
-  for_each = local.unique_albs
 
-  load_balancer_arn = each.value
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    type = "fixed-response"
-
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "Service not found"
-      status_code  = "404"
-    }
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-# Create listener rules for each VPC origin's target group
-resource "aws_lb_listener_rule" "vpc_origin_rules" {
-  for_each = local.vpc_origins
-
-  listener_arn = aws_lb_listener.shared_http[each.value.resources["aws_lb"]].arn
-  priority     = 100 + (abs(hashcode(each.key)) % 900)  # Generates priority between 100-999
-
-  action {
-    type             = "forward"
-    target_group_arn = each.value.resources["aws_lb_target_group"]
-  }
-
-  condition {
-    path_pattern {
-      values = ["${each.value.resources["aws_lb_target_group:path"]}/*"]  # Use the target group's path
-    }
-  }
-}
-
-data "aws_ec2_managed_prefix_list" "cloudfront" {
- name = "com.amazonaws.global.cloudfront.origin-facing"
-}
-
-# Allow CloudFront to access the load balancer on port 80 (shared listener)
-resource "aws_security_group_rule" "alb_http_ingress" {
-  for_each = local.vpc_origins
-
-  security_group_id = each.value.resources["aws_lb:security_group"]
-  from_port         = 80
-  to_port           = 80
-  protocol          = "tcp"
-  type              = "ingress"
-  prefix_list_ids   = [data.aws_ec2_managed_prefix_list.cloudfront.id]
-}
 
 resource "aws_cloudfront_origin_access_control" "lambda_oac" {
   count = length(local.lambda_origins) > 0 ? 1 : 0

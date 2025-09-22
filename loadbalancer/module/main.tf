@@ -5,3 +5,53 @@ resource "aws_lb" "lb" {
   security_groups    = var.security_groups
   subnets            = var.subnets
 }
+
+# Get managed prefix lists by name
+data "aws_ec2_managed_prefix_list" "prefix_lists" {
+  for_each = toset(var.prefix_list_names)
+  name     = each.key
+}
+
+locals {
+  listener_port = 80
+}
+
+# Create shared HTTP listener for services
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.lb.arn
+  port              = local.listener_port
+  protocol          = "HTTP"
+
+  default_action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Service not found"
+      status_code  = "404"
+    }
+  }
+}
+
+# Allow HTTP traffic from internet
+resource "aws_security_group_rule" "http_ingress" {
+  count             = length(var.security_groups) > 0 ? 1 : 0
+  security_group_id = var.security_groups[0]
+  from_port         = local.listener_port
+  to_port           = local.listener_port
+  protocol          = "tcp"
+  type              = "ingress"
+  cidr_blocks       = var.internal ? [] : ["0.0.0.0/0"]
+  source_security_group_id = var.internal ? var.security_groups[0] : null
+}
+
+# Allow HTTP traffic from specified prefix lists
+resource "aws_security_group_rule" "prefix_list_ingress" {
+  count             = length(var.security_groups) > 0 && length(var.prefix_list_names) > 0 ? 1 : 0
+  security_group_id = var.security_groups[0]
+  from_port         = local.listener_port
+  to_port           = local.listener_port
+  protocol          = "tcp"
+  type              = "ingress"
+  prefix_list_ids   = [for pl in data.aws_ec2_managed_prefix_list.prefix_lists : pl.id]
+}

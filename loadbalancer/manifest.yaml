@@ -22,6 +22,9 @@ inputs:
     type: list(string)
     required: true
     description: "Subnet IDs in different availability zones where load balancer nodes will be placed"
+  prefix_list_names:
+    type: list(string)
+    description: "List of AWS managed prefix list names to allow access (e.g., 'com.amazonaws.global.cloudfront.origin-facing'). Defaults to empty"
 
 outputs:
   arn: 
