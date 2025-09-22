@@ -16,17 +16,13 @@ func (a *awsfargateService) Start(proxy service.Proxy) error {
 	fmt.Println("Starting Fargate service proxy")
 	containerPort := "9001"
 
-	stackId := os.Getenv("SUGA_STACK_ID")
-	if stackId == "" {
-		return fmt.Errorf("SUGA_STACK_ID is not set")
-	}
 
 	serviceName := os.Getenv("SUGA_SERVICE_NAME")
 	if serviceName == "" {
 		return fmt.Errorf("SUGA_SERVICE_NAME is not set")
 	}
 
-	servicePrefix := fmt.Sprintf("/%s-%s", stackId, serviceName)
+	servicePrefix := fmt.Sprintf("/%s", serviceName)
 	fmt.Printf("Service prefix: %s\n", servicePrefix)
 
 	p := &httputil.ReverseProxy{

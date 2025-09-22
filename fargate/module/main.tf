@@ -82,10 +82,6 @@ data "aws_lb" "alb" {
 data "aws_region" "current" {
 }
 
-# Service path prefix for routing
-locals {
-  service_path = "${var.suga.stack_id}-${var.suga.name}"
-}
 
 # Create a CloudWatch log group
 resource "aws_cloudwatch_log_group" "default" {
@@ -110,10 +106,6 @@ resource "aws_ecs_task_definition" "service" {
       essential = true
 
       environment = concat([
-        {
-          name = "SUGA_STACK_ID"
-          value = var.suga.stack_id
-        },
         {
           name = "SUGA_SERVICE_NAME"
           value = var.suga.name
@@ -185,58 +177,12 @@ resource "aws_lb_target_group" "service" {
   target_type = "ip"
 
   health_check {
-    path = "/${local.service_path}/x-suga-health"
+    path = "/${var.suga.name}/x-suga-health"
     interval = 30
     timeout = 10
     healthy_threshold = 2
   }
 }
 
-# Create shared listener (will be reused across services)
-resource "aws_lb_listener" "shared" {
-  load_balancer_arn = var.alb_arn
-  port              = "80"
-  protocol          = "HTTP"
 
-  default_action {
-    type = "fixed-response"
-
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "Service not found"
-      status_code  = "404"
-    }
-  }
-
-  lifecycle {
-    ignore_changes = [default_action]
-  }
-}
-
-# Create path-based listener rule for this service
-resource "aws_lb_listener_rule" "service" {
-  listener_arn = aws_lb_listener.shared.arn
-  priority     = 100
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.service.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/${local.service_path}/*"]
-    }
-  }
-}
-
-# Setup ingress on port 80 for the security groups
-resource "aws_security_group_rule" "ingress" {
-  security_group_id = var.alb_security_group
-  self = true
-  from_port = 80
-  to_port = 80
-  protocol = "tcp"
-  type = "ingress"
-}
 
