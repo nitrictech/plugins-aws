@@ -465,6 +465,14 @@ resource "aws_cloudfront_distribution" "distribution" {
     content {
       domain_name = origin.value.domain_name
       origin_id = "${origin.key}"
+      # Concatenate fargate's base path with any additional configured base_path
+      # fargate provides "/<service-name>", add configured base_path if present
+      origin_path = try(
+        origin.value.base_path != null && origin.value.base_path != "" ?
+          "${origin.value.resources["aws_lb_target_group:path"]}/${trimprefix(origin.value.base_path, "/")}" :
+          origin.value.resources["aws_lb_target_group:path"],
+        ""
+      )
       vpc_origin_config {
         vpc_origin_id = aws_cloudfront_vpc_origin.vpc_origin[origin.key].id
       }
