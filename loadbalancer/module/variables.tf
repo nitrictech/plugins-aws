@@ -19,6 +19,11 @@ variable "subnets" {
   type    = list(string)
 }
 
+variable "cidr_blocks" {
+  type    = list(string)
+  default = []
+}
+
 variable "prefix_list_names" {
   type        = list(string)
   default     = []

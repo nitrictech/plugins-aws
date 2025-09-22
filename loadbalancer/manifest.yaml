@@ -25,6 +25,9 @@ inputs:
   prefix_list_names:
     type: list(string)
     description: "List of AWS managed prefix list names to allow access (e.g., 'com.amazonaws.global.cloudfront.origin-facing'). Defaults to empty"
+  cidir_blocks:
+    type: list(string)
+    description: "List of CIDR blocks to allow access to the load balancer"
 
 outputs:
   arn: 
