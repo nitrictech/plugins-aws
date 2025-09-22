@@ -418,8 +418,50 @@ resource "aws_cloudfront_distribution" "distribution" {
   }
 
   dynamic "ordered_cache_behavior" {
+    # separate out as lambda@edge cannot be used with VPC origins
+    for_each = length(local.vpc_origins) > 0 ? local.vpc_origins : {}
+
+    content {
+      path_pattern = "${ordered_cache_behavior.value.path}*"
+
+      function_association {
+        event_type = "viewer-request"
+        function_arn = aws_cloudfront_function.api-url-rewrite-function.arn
+      }
+
+      allowed_methods = ["GET","HEAD","OPTIONS","PUT","POST","PATCH","DELETE"]
+      cached_methods = ["GET","HEAD","OPTIONS"]
+      target_origin_id = "${ordered_cache_behavior.key}"
+
+      # See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-policy-origin-cache-headers
+      # Use AWS managed cache policy - UseOriginCacheHeaders
+      # This policy honors the cache headers from the origin
+      # cache_policy_id = "83da9c7e-98b4-4e11-a168-04f0df8e2c65"
+      # FIXME: Disabling cache policy for now
+      # as adding origin cache headers appears to cause issues with Lambda function URLs
+      cache_policy_id = local.default_cache_policy_id
+      
+      # See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html#managed-origin-request-policy-all-viewer
+      # Use AWS managed origin request policy - AllViewer
+      # This forwards all headers, query strings, and cookies to the origin
+      origin_request_policy_id = var.default_origin_request_policy_id
+
+      # Legacy configuration for custom cache behavior
+      # forwarded_values {
+      #   query_string = true
+      #   cookies {
+      #     forward = "all"
+      #   }
+      #   headers = ["Authorization"]
+      # }
+
+      viewer_protocol_policy = "https-only"
+    }
+  }
+
+  dynamic "ordered_cache_behavior" {
     for_each = {
-      for k, v in var.suga.origins : k => v
+      for k, v in local.non_vpc_origins: k => v
       if v.path != "/"
     }
 
