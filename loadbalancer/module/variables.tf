@@ -12,7 +12,7 @@ variable "internal" {
 }
 
 variable "security_groups" {
-  type    = list(string)
+  type    = set(string)
 }
 
 variable "subnets" {
