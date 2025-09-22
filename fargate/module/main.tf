@@ -82,6 +82,9 @@ data "aws_lb" "alb" {
 data "aws_region" "current" {
 }
 
+locals {
+  sanitized_target_group_name = replace("${var.suga.stack_id}-${var.suga.name}", "_", "-")
+}
 
 # Create a CloudWatch log group
 resource "aws_cloudwatch_log_group" "default" {
@@ -169,7 +172,7 @@ resource "aws_ecs_service" "service" {
 
 # Create target group
 resource "aws_lb_target_group" "service" {
-  name        = "${var.suga.stack_id}-${var.suga.name}"
+  name        = local.sanitized_target_group_name
   port        = 9001
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
