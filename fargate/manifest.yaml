@@ -1,5 +1,6 @@
 name: aws-fargate
 type: service
+description: "Provisions ECS Fargate services with load balancer integration and container orchestration"
 icon: ./icon.svg
 required_identities:
   - aws:iam:role
@@ -15,24 +16,24 @@ inputs:
     description: "ARN of the Application Load Balancer."
   alb_security_group:
     type: string
-    description: "Security group ID for ALB network rules. Uses ALB's existing security group if not specified"
+    description: "Application Load Balancer security group ID (e.g. `sg-0123456789abcdef0`)"
   cpu:
     type: number
-    description: "CPU units allocated - 256 equals 0.25 vCPU, options include 512, 1024, 2048, 4096. Defaults to 256"
+    description: "CPU units for Fargate task: `256`, `512`, `1024`, `2048`, `4096`, `8192`, `16384`"
   memory:
     type: number
     description: "RAM in MB, must follow AWS Fargate CPU-to-memory ratios (e.g. 256 CPU supports 512-2048 MB). Defaults to 512."
   environment:
     type: map(string)
-    description: "Key-value pairs accessible as environment variables in your container. Defaults to empty"
+    description: "Container environment variables (e.g. `{\"NODE_ENV\": \"production\", \"PORT\": \"8080\"}`)"
   vpc_id:
     type: string
-    description: "VPC ID for network isolation. Uses default VPC if not specified"
+    description: "VPC ID where Fargate service runs (e.g. `vpc-12345678`)"
   subnets:
     type: list(string)
-    description: "Subnet IDs in different availability zones for high availability. Uses default subnets if not specified"
+    description: "Subnet IDs where Fargate tasks run. Must be subnets within VPC specified by vpc_id. Use private subnets for internal services or public subnets for tasks needing direct internet access (e.g. `[\"subnet-12345\", \"subnet-67890\"]`)"
   security_groups:
     type: list(string)
-    description: "Additional security groups for network access control. Creates new security group if not specified"
+    description: "Security group IDs controlling inbound and outbound network traffic for Fargate tasks. Configure to allow access from load balancers and to required services (e.g. `[\"sg-web\", \"sg-database\"]`)"
 
 outputs: {}

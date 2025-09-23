@@ -1,5 +1,6 @@
 name: aws-s3-bucket
 type: storage
+description: "Provisions S3 buckets for object storage with configurable access permissions"
 icon: ./icon.svg
 required_identities:
   - aws:iam:role
@@ -11,6 +12,6 @@ runtime:
 inputs:
   tags:
     type: map(string)
-    description: "Metadata labels for resource organization. Applied at the bucket level for billing and management purposes. Defaults to empty"
+    description: "S3 bucket tags (e.g. `{\"Environment\": \"production\", \"Team\": \"backend\"}`)"
 
 outputs: {}

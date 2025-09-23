@@ -1,23 +1,25 @@
 name: aws-loadbalancer
+display_name: Load Balancer
 type: infra
+description: "Creates Application Load Balancer for distributing traffic across multiple targets"
 icon: ./icon.svg
 deployment:
   terraform: ./module
 inputs:
   load_balancer_type:
     type: string
-    description: "Type of load balancer - application for HTTP/HTTPS traffic, network for TCP/UDP. Defaults to application"
+    description: "Routing capabilities and protocols. `application` for HTTP/HTTPS with advanced routing, `network` for high-performance TCP/UDP, `gateway` for third-party appliances (e.g. `application`)"
   name:
     type: string
     required: true
-    description: "Name identifier for the load balancer resource"
+    description: "Load balancer name (e.g. `api-alb`)"
   internal:
     type: bool
-    description: "Create internal load balancer accessible only from VPC, or internet-facing for public access. Defaults to false (internet-facing)"
+    description: "`false` (default) creates internet-facing load balancer receiving public traffic (requires public subnets). `true` creates internal load balancer routing only within VPC (use private subnets)"
   security_groups:
     type: list(string)
     required: true
-    description: "Security group IDs that control inbound traffic rules to the load balancer"
+    description: "Security group IDs controlling load balancer traffic. Configure inbound rules for ports 80/443 from internet or specific IP ranges (e.g. `[\"sg-alb-web\"]`)"
   subnets:
     type: list(string)
     required: true
@@ -30,5 +32,6 @@ inputs:
     description: "List of CIDR blocks to allow access to the load balancer"
 
 outputs:
-  arn: 
+  arn:
     type: string
+    description: "Amazon Resource Name (ARN) that uniquely identifies the load balancer across AWS, used for referencing this load balancer in other resources and policies"
