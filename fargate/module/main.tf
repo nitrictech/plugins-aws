@@ -205,6 +205,17 @@ data "aws_lb_listener" "shared_http" {
   port = 80
 }
 
+# Add a security group rule that allows self ingres traffic to allow the ALB to access the health check service
+resource "aws_security_group_rule" "allow_self_ingress" {
+  count = length(var.security_groups)
+  security_group_id = var.security_groups[count.index]
+  from_port = 8080
+  to_port = 8080
+  protocol = "tcp"
+  type = "ingress"
+  self = true
+}
+
 # Create listener rule for this service's target group
 resource "aws_lb_listener_rule" "service" {
   listener_arn = data.aws_lb_listener.shared_http.arn
