@@ -110,6 +110,7 @@ resource "aws_cloudfront_function" "api-url-rewrite-function" {
 
 # Lambda@Edge function for auth preservation and webhook signing
 resource "aws_iam_role" "lambda_edge_origin_request" {
+  count = length(local.lambda_origins) > 0 ? 1 : 0
   name = "lambda-edge-origin-request-role"
   
   assume_role_policy = jsonencode({
@@ -125,11 +126,13 @@ resource "aws_iam_role" "lambda_edge_origin_request" {
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_edge_origin_request_basic" {
-  role       = aws_iam_role.lambda_edge_origin_request.name
+  count      = length(local.lambda_origins) > 0 ? 1 : 0
+  role       = aws_iam_role.lambda_edge_origin_request[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 data "archive_file" "origin_request_lambda" {
+  count       = length(local.lambda_origins) > 0 ? 1 : 0
   type        = "zip"
   output_path = "${path.module}/lambda-origin-request.zip"
   
@@ -140,12 +143,13 @@ data "archive_file" "origin_request_lambda" {
 }
 
 resource "aws_lambda_function" "origin_request" {
+  count            = length(local.lambda_origins) > 0 ? 1 : 0
   region           = "us-east-1"
-  filename         = data.archive_file.origin_request_lambda.output_path
+  filename         = data.archive_file.origin_request_lambda[0].output_path
   function_name    = "cloudfront-origin-request"
-  role             = aws_iam_role.lambda_edge_origin_request.arn
+  role             = aws_iam_role.lambda_edge_origin_request[0].arn
   handler          = "index.handler"
-  source_code_hash = data.archive_file.origin_request_lambda.output_base64sha256
+  source_code_hash = data.archive_file.origin_request_lambda[0].output_base64sha256
   runtime          = "nodejs22.x"
   timeout          = 5
   memory_size      = 128
@@ -153,10 +157,11 @@ resource "aws_lambda_function" "origin_request" {
 }
 
 resource "aws_lambda_permission" "allow_cloudfront_origin_request" {
+  count         = length(local.lambda_origins) > 0 ? 1 : 0
   region        = "us-east-1"
   statement_id  = "AllowExecutionFromCloudFront"
   action        = "lambda:GetFunction"
-  function_name = aws_lambda_function.origin_request.function_name
+  function_name = aws_lambda_function.origin_request[0].function_name
   principal     = "edgelambda.amazonaws.com"
 }
 
@@ -473,11 +478,14 @@ resource "aws_cloudfront_distribution" "distribution" {
         function_arn = aws_cloudfront_function.api-url-rewrite-function.arn
       }
 
-      # Add Lambda@Edge for auth preservation and webhook signing
-      lambda_function_association {
-        event_type   = "origin-request"
-        lambda_arn   = aws_lambda_function.origin_request.qualified_arn
-        include_body = true
+      # Add Lambda@Edge for auth preservation and webhook signing (only if a Lambda origin)
+      dynamic "lambda_function_association" {
+        for_each = contains(keys(ordered_cache_behavior.value.resources), "aws_lambda_function") ? [1] : []
+        content {
+          event_type   = "origin-request"
+          lambda_arn   = aws_lambda_function.origin_request[0].qualified_arn
+          include_body = true
+        }
       }
 
       allowed_methods = ["GET","HEAD","OPTIONS","PUT","POST","PATCH","DELETE"]
@@ -516,13 +524,13 @@ resource "aws_cloudfront_distribution" "distribution" {
     target_origin_id = "${keys(local.default_origin)[0]}"
     viewer_protocol_policy = "redirect-to-https"
 
-    # Add Lambda@Edge for auth preservation and webhook signing (only if not a Lambda origin)
+    # Add Lambda@Edge for auth preservation and webhook signing (only if not a Lambda origin and Lambda@Edge exists)
     dynamic "lambda_function_association" {
-      for_each = contains(keys(local.default_origin[keys(local.default_origin)[0]].resources), "aws_lambda_function") ? [] : [1]
+      for_each = contains(keys(local.default_origin[keys(local.default_origin)[0]].resources), "aws_lambda_function") ? [1] : []
 
       content {
         event_type   = "origin-request"
-        lambda_arn   = aws_lambda_function.origin_request.qualified_arn
+        lambda_arn   = aws_lambda_function.origin_request[0].qualified_arn
         include_body = true
       }
     }
