@@ -14,8 +14,10 @@ type awsfargateService struct{}
 
 func (a *awsfargateService) Start(proxy service.Proxy) error {
 	fmt.Println("Starting Fargate service proxy")
-	containerPort := "9001"
-
+	containerPort := os.Getenv("FARGATE_PROXY_PORT")
+	if containerPort == "" {
+		containerPort = "8080"
+	}
 
 	serviceName := os.Getenv("SUGA_SERVICE_NAME")
 	if serviceName == "" {

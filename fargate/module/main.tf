@@ -120,6 +120,10 @@ resource "aws_ecs_task_definition" "service" {
         {
           name = "PORT"
           value = "9001"        
+        },
+        {
+          name = "FARGATE_PROXY_PORT"
+          value = "8080"
         }
       ],
       [
