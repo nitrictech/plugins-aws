@@ -112,6 +112,10 @@ resource "aws_ecs_task_definition" "service" {
         {
           name = "SUGA_SERVICE_NAME"
           value = var.suga.name
+        },
+        {
+          name = "SUGA_STACK_ID"
+          value = var.suga.stack_id
         }
       ],
       [
