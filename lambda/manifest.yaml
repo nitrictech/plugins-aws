@@ -1,5 +1,6 @@
 name: aws-lambda
 type: service
+description: "Deploys Services as container running on AWS Lambda, with IAM roles and optional VPC configuration"
 icon: ./icon.svg
 required_identities:
   - aws:iam:role
@@ -13,27 +14,27 @@ runtime:
 inputs:
   architecture:
     type: string
-    description: "CPU instruction set - x86_64 for Intel/AMD, arm64 for AWS Graviton2. Defaults to x86_64"
+    description: "Instruction set architecture for the Lambda function (e.g. `x86_64`)"
   timeout:
     type: number
-    description: "Maximum execution time in seconds before Lambda terminates the function. Defaults to 300 seconds, max 900"
+    description: "Maximum execution time in seconds 1-900 (e.g. `300`)"
   memory:
     type: number
-    description: "RAM in MB, directly affects CPU allocation and pricing. Defaults to 1024 MB, accepts 128-10240"
+    description: "Amount of memory in MB 128-10240 (e.g. `1024`)"
   ephemeral_storage:
     type: number
-    description: "Temporary disk space in MB for /tmp directory. Defaults to 1024 MB, max 10240"
+    description: "Size of ephemeral storage in MB 512-10240 (e.g. `1024`)"
   environment:
     type: map(string)
-    description: "Key-value pairs accessible as environment variables in your function code. Defaults to empty"
+    description: 'Environment variables for the Lambda function (e.g. `{"DATABASE_URL": "postgres://...", "LOG_LEVEL": "info"}`)
   function_url_auth_type:
     type: string
-    description: "Access control for function URLs - AWS_IAM requires signed requests, NONE allows public access. Defaults to AWS_IAM"
+    description: "Authorization type for function URL (e.g. `AWS_IAM`)"
   subnet_ids:
     type: list(string)
-    description: "VPC subnet IDs to enable private network access to RDS, ElastiCache, etc. Defaults to none, runs in AWS-managed VPC"
+    description: 'Subnet IDs for Lambda VPC deployment, enabling access to private resources like RDS databases or internal services. Must be used with security_group_ids - both provided for VPC deployment or both empty for internet-only Lambda (e.g. `["subnet-private-1", "subnet-private-2"]`)
   security_group_ids:
     type: list(string)
-    description: "Network traffic rules when running in VPC. Defaults to none, uses default VPC security group if subnets specified"
+    description: 'Security group IDs controlling network access when Lambda runs in VPC. Must be used with subnet_ids - both provided for VPC deployment or both empty for internet-only Lambda. Configure outbound rules for database, API, or service access (e.g. `["sg-lambda-rds", "sg-lambda-redis"]`)'
 
 outputs: {}
