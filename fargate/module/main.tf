@@ -116,6 +116,10 @@ resource "aws_ecs_task_definition" "service" {
         {
           name = "SUGA_STACK_ID"
           value = var.suga.stack_id
+        },
+        {
+          name = "PORT"
+          value = "9001"        
         }
       ],
       [
