@@ -25,15 +25,15 @@ inputs:
     description: "RAM in MB, must follow AWS Fargate CPU-to-memory ratios (e.g. 256 CPU supports 512-2048 MB). Defaults to 512."
   environment:
     type: map(string)
-    description: "Container environment variables (e.g. `{\"NODE_ENV\": \"production\", \"PORT\": \"8080\"}`)"
+    description: 'Container environment variables (e.g. `{"NODE_ENV": "production", "PORT": "8080"}`)
   vpc_id:
     type: string
     description: "VPC ID where Fargate service runs (e.g. `vpc-12345678`)"
   subnets:
     type: list(string)
-    description: "Subnet IDs where Fargate tasks run. Must be subnets within VPC specified by vpc_id. Use private subnets for internal services or public subnets for tasks needing direct internet access (e.g. `[\"subnet-12345\", \"subnet-67890\"]`)"
+    description: 'Subnet IDs where Fargate tasks run. Must be subnets within VPC specified by vpc_id. Use private subnets for internal services or public subnets for tasks needing direct internet access (e.g. `["subnet-12345", "subnet-67890"]`)
   security_groups:
     type: list(string)
-    description: "Security group IDs controlling inbound and outbound network traffic for Fargate tasks. Configure to allow access from load balancers and to required services (e.g. `[\"sg-web\", \"sg-database\"]`)"
+    description: 'Security group IDs controlling inbound and outbound network traffic for Fargate tasks. Configure to allow access from load balancers and to required services (e.g. `["sg-web", "sg-database"]`)'
 
 outputs: {}

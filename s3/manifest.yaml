@@ -12,6 +12,6 @@ runtime:
 inputs:
   tags:
     type: map(string)
-    description: "S3 bucket tags (e.g. `{\"Environment\": \"production\", \"Team\": \"backend\"}`)"
+    description: 'S3 bucket tags (e.g. `{"Environment": "production", "Team": "backend"}`)'
 
 outputs: {}

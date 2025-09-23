@@ -12,10 +12,10 @@ inputs:
     description: "VPC name (e.g. `main-vpc`)"
   networking:
     type: object
-    description: "Network configuration including CIDR block and subnet definitions (e.g. `{\"cidr_block\": \"10.0.0.0/16\", \"public_subnets\": [\"10.0.1.0/24\", \"10.0.2.0/24\"], \"private_subnets\": [\"10.0.10.0/24\", \"10.0.11.0/24\"]}`)"
+    description: 'Network configuration including CIDR block and subnet definitions (e.g. `{"cidr_block": "10.0.0.0/16", "public_subnets": ["10.0.1.0/24", "10.0.2.0/24"], "private_subnets": ["10.0.10.0/24", "10.0.11.0/24"]}`)
   azs:
     type: list(string)
-    description: "Availability zones for the VPC (e.g. `[\"us-east-1a\", \"us-east-1b\", \"us-east-1c\"]`)"
+    description: 'Availability zones for the VPC (e.g. `["us-east-1a", "us-east-1b", "us-east-1c"]`)
   enable_nat_gateway:
     type: bool
     description: "`false` (default) keeps private subnets completely isolated. `true` allows private subnet resources to access internet for updates and external API calls while remaining unreachable from internet"
@@ -27,13 +27,13 @@ inputs:
     description: "`false` (default) deploys one NAT Gateway per availability zone for high availability. `true` uses one shared NAT Gateway for all zones (reduces costs but creates single point of failure). Only applicable when enable_nat_gateway is `true`"
   default_security_group_ingress:
     type: list(map(string))
-    description: "Default security group ingress rules (e.g. `[{\"from_port\": \"80\", \"to_port\": \"80\", \"protocol\": \"tcp\", \"cidr_blocks\": \"0.0.0.0/0\"}]`)"
+    description: 'Default security group ingress rules (e.g. `[{"from_port": "80", "to_port": "80", "protocol": "tcp", "cidr_blocks": "0.0.0.0/0"}]`)
   default_security_group_egress:
     type: list(map(string))
-    description: "Default security group egress rules (e.g. `[{\"from_port\": \"0\", \"to_port\": \"0\", \"protocol\": \"-1\", \"cidr_blocks\": \"0.0.0.0/0\"}]`)"
+    description: 'Default security group egress rules (e.g. `[{"from_port": "0", "to_port": "0", "protocol": "-1", "cidr_blocks": "0.0.0.0/0"}]`)
   tags:
     type: map(string)
-    description: "VPC resource tags (e.g. `{\"Environment\": \"production\", \"Project\": \"web-app\"}`)"
+    description: 'VPC resource tags (e.g. `{"Environment": "production", "Project": "web-app"}`)'
 
 outputs:
   vpc_id:

@@ -19,7 +19,7 @@ inputs:
   security_groups:
     type: list(string)
     required: true
-    description: "Security group IDs controlling load balancer traffic. Configure inbound rules for ports 80/443 from internet or specific IP ranges (e.g. `[\"sg-alb-web\"]`)"
+    description: 'Security group IDs controlling load balancer traffic. Configure inbound rules for ports 80/443 from internet or specific IP ranges (e.g. `["sg-alb-web"]`)'
   subnets:
     type: list(string)
     required: true
