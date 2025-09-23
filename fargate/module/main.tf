@@ -150,8 +150,8 @@ resource "aws_ecs_task_definition" "service" {
 
       portMappings = [
         {
-          containerPort = 9001
-          hostPort      = 9001
+          containerPort = 8080
+          hostPort      = 8080
         }
       ]
     }
@@ -178,14 +178,14 @@ resource "aws_ecs_service" "service" {
   load_balancer {
     target_group_arn = aws_lb_target_group.service.arn
     container_name   = "main"
-    container_port   = 9001
+    container_port   = 8080
   }
 }
 
 # Create target group
 resource "aws_lb_target_group" "service" {
   name        = local.sanitized_target_group_name
-  port        = 9001
+  port        = 8080
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
 
