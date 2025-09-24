@@ -12,10 +12,8 @@ inputs:
     description: "VPC name (e.g. `main-vpc`)"
   networking:
     type: object
-    description: 'Network configuration including CIDR block and subnet definitions (e.g. `{"cidr_block": "10.0.0.0/16", "public_subnets": ["10.0.1.0/24", "10.0.2.0/24"], "private_subnets": ["10.0.10.0/24", "10.0.11.0/24"]}`)
   azs:
     type: list(string)
-    description: 'Availability zones for the VPC (e.g. `["us-east-1a", "us-east-1b", "us-east-1c"]`)
   enable_nat_gateway:
     type: bool
     description: "`false` (default) keeps private subnets completely isolated. `true` allows private subnet resources to access internet for updates and external API calls while remaining unreachable from internet"
