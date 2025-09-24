@@ -123,7 +123,7 @@ resource "aws_ecs_task_definition" "service" {
         },
         {
           name = "FARGATE_PROXY_PORT"
-          value = "8080"
+          value = "${var.container_port}"
         }
       ],
       [
@@ -150,8 +150,8 @@ resource "aws_ecs_task_definition" "service" {
 
       portMappings = [
         {
-          containerPort = 8080
-          hostPort      = 8080
+          containerPort = var.container_port
+          hostPort      = var.container_port
         }
       ]
     }
@@ -178,14 +178,14 @@ resource "aws_ecs_service" "service" {
   load_balancer {
     target_group_arn = aws_lb_target_group.service.arn
     container_name   = "main"
-    container_port   = 8080
+    container_port   = var.container_port
   }
 }
 
 # Create target group
 resource "aws_lb_target_group" "service" {
   name        = local.sanitized_target_group_name
-  port        = 8080
+  port        = var.container_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
 

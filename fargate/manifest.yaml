@@ -13,6 +13,9 @@ inputs:
   alb_arn:
     type: string
     required: true
+  container_port:
+    type: number
+    description: "Port on which the container listens for traffic (e.g. `8080`)"
   alb_security_group:
     type: string
   cpu:
