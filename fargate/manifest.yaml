@@ -13,27 +13,19 @@ inputs:
   alb_arn:
     type: string
     required: true
-    description: "ARN of the Application Load Balancer."
   alb_security_group:
     type: string
-    description: "Application Load Balancer security group ID (e.g. `sg-0123456789abcdef0`)"
   cpu:
     type: number
-    description: "CPU units for Fargate task: `256`, `512`, `1024`, `2048`, `4096`, `8192`, `16384`"
   memory:
     type: number
-    description: "Memory in MB for Fargate task (e.g. `512`)"
   environment:
     type: map(string)
-    description: 'Container environment variables (e.g. `{"NODE_ENV": "production", "PORT": "8080"}`)'
   vpc_id:
     type: string
-    description: "VPC ID where Fargate service runs (e.g. `vpc-12345678`)"
   subnets:
     type: list(string)
-    description: 'Subnet IDs where Fargate tasks run. Must be subnets within VPC specified by vpc_id. Use private subnets for internal services or public subnets for tasks needing direct internet access (e.g. `["subnet-12345", "subnet-67890"]`)'
   security_groups:
     type: list(string)
-    description: 'Security group IDs controlling inbound and outbound network traffic for Fargate tasks. Configure to allow access from load balancers and to required services (e.g. `["sg-web", "sg-database"]`)'
 
 outputs: {}
