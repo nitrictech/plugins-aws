@@ -123,7 +123,7 @@ resource "aws_ecs_task_definition" "service" {
         },
         {
           name = "FARGATE_PROXY_PORT"
-          value = "${var.container_port}"
+          value = "${tostring(var.container_port)}"
         }
       ],
       [
