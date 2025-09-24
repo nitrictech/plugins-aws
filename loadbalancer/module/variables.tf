@@ -6,6 +6,11 @@ variable "load_balancer_type" {
 variable "name" {
   type    = string
 }
+
+variable "listener_port" {
+  type    = number
+  default = 80
+}
 variable "internal" {
   type    = bool
   default = false

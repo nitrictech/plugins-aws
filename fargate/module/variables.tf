@@ -8,7 +8,6 @@ variable "suga" {
   })
 }
 
-
 variable "alb_arn" {
   type    = string
 }

@@ -35,3 +35,6 @@ outputs:
   arn:
     type: string
     description: "Amazon Resource Name (ARN) that uniquely identifies the load balancer across AWS, used for referencing this load balancer in other resources and policies"
+  listener_arn:
+    type: string
+    description: "The ARN of the listener created for the load balancer, used to manage and reference the listener in other resources such as target groups and rules"

@@ -12,14 +12,10 @@ data "aws_ec2_managed_prefix_list" "prefix_lists" {
   name     = each.key
 }
 
-locals {
-  listener_port = 80
-}
-
 # Create shared HTTP listener for services
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.lb.arn
-  port              = local.listener_port
+  port              = var.listener_port
   protocol          = "HTTP"
 
   default_action {
@@ -36,26 +32,4 @@ resource "aws_lb_listener" "http" {
 data "aws_security_group" "groups" {
   count = length(var.security_groups)
   id    = var.security_groups[count.index]
-}
-
-# Allow HTTP traffic from internet
-resource "aws_security_group_rule" "http_ingress" {
-  count             = length(data.aws_security_group.groups)
-  security_group_id = data.aws_security_group.groups[count.index].id
-  from_port         = local.listener_port
-  to_port           = local.listener_port
-  protocol          = "tcp"
-  type              = "ingress"
-  cidr_blocks       = var.internal ? [] : var.cidr_blocks
-}
-
-# Allow HTTP traffic from specified prefix lists
-resource "aws_security_group_rule" "prefix_list_ingress" {
-  count             = length(data.aws_security_group.groups)
-  security_group_id = data.aws_security_group.groups[count.index].id
-  from_port         = local.listener_port
-  to_port           = local.listener_port
-  protocol          = "tcp"
-  type              = "ingress"
-  prefix_list_ids   = [for pl in data.aws_ec2_managed_prefix_list.prefix_lists : pl.id]
 }
