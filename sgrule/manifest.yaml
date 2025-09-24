@@ -21,7 +21,7 @@ inputs:
   type:
     type: string  
     required: true
-    description: "Type of rule, either `ingress` (inbound) or egress (outbound)"`
+    description: "Type of rule, either `ingress` (inbound) or egress (outbound)"
   protocol:
     type: string
     required: true
