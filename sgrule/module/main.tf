@@ -1,5 +1,5 @@
 data "aws_ec2_managed_prefix_list" "prefix_lists" {
-  for_each = try(toset(var.prefix_list_names), [])
+  for_each = var.prefix_list_names != null ? toset(var.prefix_list_names) : []
   name     = each.key
 }
 
@@ -13,5 +13,5 @@ resource "aws_security_group_rule" "rules" {
   type = var.type
   self = var.self
   cidr_blocks = var.cidr_blocks
-  prefix_list_ids = [for pl in data.aws_ec2_managed_prefix_list.prefix_lists : pl.id]
+  prefix_list_ids = length(data.aws_ec2_managed_prefix_list.prefix_lists) > 0 ? [for pl in data.aws_ec2_managed_prefix_list.prefix_lists : pl.id] : null
 }
