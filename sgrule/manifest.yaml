@@ -28,7 +28,7 @@ inputs:
     description: "Protocol for the rule (e.g. `tcp`, `udp`, `icmp`, or `-1` for all protocols)"
   cidr_blocks:
     type: list(string)
-    description: "List of CIDR blocks to which the rule will apply
+    description: "List of CIDR blocks to which the rule will apply"
   prefix_list_names:
     type: list(string)
     description: "List of managed prefix list names to which the rule will apply (e.g. `['pl-0123456789abcdef0']`)"
