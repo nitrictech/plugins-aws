@@ -1,5 +1,7 @@
-name: aws-vpc
+name: vpc
+display_name: VPC
 type: infra
+description: "Provisions VPC with public/private subnets and routing tables"
 icon: ./icon.svg
 deployment:
   terraform: ./module
@@ -7,40 +9,37 @@ inputs:
   name:
     type: string
     required: true
-    description: "Name identifier for the VPC and all associated resources"
+    description: "VPC name (e.g. `main-vpc`)"
   networking:
     type: object
-    description: "Network configuration including CIDR blocks and subnet ranges. Defaults to 10.0.0.0/16 with 3 private and 3 public subnets"
   azs:
     type: list(string)
-    description: "Availability zones for subnet placement. Uses all available AZs in region if not specified"
   enable_nat_gateway:
     type: bool
-    description: "Create NAT gateways for private subnet internet access, incurs hourly charges. Defaults to false"
+    description: "`false` (default) keeps private subnets completely isolated. `true` allows private subnet resources to access internet for updates and external API calls while remaining unreachable from internet"
   enable_vpn_gateway:
     type: bool
-    description: "Create VPN gateway for site-to-site VPN connections to on-premises networks. Defaults to false"
+    description: "`false` (default) if no on-premises connections needed. `true` creates VPN gateway enabling secure connections between on-premises network and AWS VPC"
   single_nat_gateway:
     type: bool
-    description: "Use one NAT gateway for all private subnets instead of one per AZ, reduces costs but removes redundancy. Defaults to false"
-  default_security_group_ingress:
-    type: list(map(string))
-    description: "Inbound traffic rules for the default security group. Defaults to no inbound access"
-  default_security_group_egress:
-    type: list(map(string))
-    description: "Outbound traffic rules for the default security group. Defaults to allow all outbound traffic"
+    description: "`false` (default) deploys one NAT Gateway per availability zone for high availability. `true` uses one shared NAT Gateway for all zones (reduces costs but creates single point of failure). Only applicable when enable_nat_gateway is `true`"
   tags:
     type: map(string)
-    description: "Metadata labels for resource organization. Applied at the VPC level for billing and management purposes. Defaults to empty"
+    description: 'VPC resource tags (e.g. `{"Environment": "production", "Project": "web-app"}`)'
 
 outputs:
   vpc_id:
     type: string
+    description: "Unique identifier for the Virtual Private Cloud, used to reference this VPC when creating subnets, security groups, and other network resources"
   private_subnets:
     type: list(string)
+    description: "Subnet IDs without direct internet access, used for databases, internal services, and resources that should not be publicly accessible"
   public_subnets:
     type: list(string)
+    description: "Subnet IDs with internet gateway access, used for load balancers, NAT gateways, and resources needing direct internet connectivity"
   subnets:
     type: list(string)
+    description: "Combined list of all subnet IDs, useful when resources need to span both public and private subnets regardless of internet access"
   default_security_group_id:
     type: string
+    description: "VPC default security group ID, automatically applied to resources without explicit security groups, useful for setting baseline network rules"

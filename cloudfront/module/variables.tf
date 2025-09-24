@@ -2,14 +2,16 @@ variable "suga" {
   type = object({
     name     = string
     stack_id = string
-    # A map of path to origin
+    # A map of origin name to origin config with multiple route mappings
     origins = map(object({
-      path = string
-      base_path = string
-      type = string
+      routes = list(object({
+        path      = string
+        base_path = string
+      }))
+      type        = string
       domain_name = string
-      id = string
-      resources = map(string)
+      id          = string
+      resources   = map(string)
     }))
   })
 }
@@ -36,9 +38,9 @@ variable "waf_enabled" {
 variable "waf_managed_rules" {
   description = "List of AWS Managed Rule Groups to enable"
   type = list(object({
-    name            = string
-    priority        = number
-    override_action = string
+    name                  = string
+    priority              = number
+    override_action       = string
     rule_action_overrides = optional(map(string), {})
   }))
   default = [
@@ -62,7 +64,7 @@ variable "geo_restriction_type" {
   description = "Type of geo restriction (none, whitelist, blacklist)"
   type        = string
   default     = "none"
-  
+
   validation {
     condition     = contains(["none", "whitelist", "blacklist"], var.geo_restriction_type)
     error_message = "Geo restriction type must be one of: none, whitelist, blacklist."
@@ -80,7 +82,7 @@ variable "default_origin_request_policy_id" {
   description = "Default origin request policy"
   type        = string
   # Default cache policy AllViewerExceptHostHeader
-  default     = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+  default = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
 }
 
 variable "geo_restriction_locations" {

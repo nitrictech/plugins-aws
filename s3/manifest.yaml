@@ -1,16 +1,17 @@
-name: aws-s3-bucket
+name: s3-bucket
 type: storage
+description: "Provisions S3 buckets for object storage with configurable access permissions"
 icon: ./icon.svg
 required_identities:
   - aws:iam:role
 deployment:
   terraform: ./module
 runtime:
-  go_module: github.com/nitrictech/plugins/aws/s3
+  go_module: github.com/nitrictech/plugins-aws/s3
 
 inputs:
   tags:
     type: map(string)
-    description: "Metadata labels for resource organization. Applied at the bucket level for billing and management purposes. Defaults to empty"
+    description: 'S3 bucket tags (e.g. `{"Environment": "production", "Team": "backend"}`)'
 
 outputs: {}

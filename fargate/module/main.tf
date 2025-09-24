@@ -82,6 +82,10 @@ data "aws_lb" "alb" {
 data "aws_region" "current" {
 }
 
+locals {
+  sanitized_target_group_name = replace("${var.suga.stack_id}-${var.suga.name}", "_", "-")
+}
+
 # Create a CloudWatch log group
 resource "aws_cloudwatch_log_group" "default" {
   name = "${var.suga.stack_id}-${var.suga.name}"
@@ -106,12 +110,20 @@ resource "aws_ecs_task_definition" "service" {
 
       environment = concat([
         {
-          name = "CONTAINER_PORT"
-          value = "${tostring(var.container_port)}"
+          name = "SUGA_SERVICE_NAME"
+          value = var.suga.name
         },
         {
           name = "SUGA_STACK_ID"
           value = var.suga.stack_id
+        },
+        {
+          name = "PORT"
+          value = "9001"        
+        },
+        {
+          name = "FARGATE_PROXY_PORT"
+          value = "${var.container_port}"
         }
       ],
       [
@@ -172,7 +184,7 @@ resource "aws_ecs_service" "service" {
 
 # Create target group
 resource "aws_lb_target_group" "service" {
-  name        = "${var.suga.stack_id}-${var.suga.name}"
+  name        = local.sanitized_target_group_name
   port        = var.container_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -180,32 +192,34 @@ resource "aws_lb_target_group" "service" {
   target_type = "ip"
 
   health_check {
-    path = "/x-suga-health"
+    path = "/${var.suga.name}/x-suga-health"
     interval = 30
     timeout = 10
     healthy_threshold = 2
   }
 }
 
-# Create listener
-resource "aws_lb_listener" "service" {
+# Reference the shared HTTP listener created by the loadbalancer module
+data "aws_lb_listener" "shared_http" {
   load_balancer_arn = var.alb_arn
-  port              = var.container_port
-  protocol          = "HTTP"
-  
-  default_action {
+  port = 80
+}
+
+# Create listener rule for this service's target group
+resource "aws_lb_listener_rule" "service" {
+  listener_arn = data.aws_lb_listener.shared_http.arn
+
+  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.service.arn
   }
+
+  condition {
+    path_pattern {
+      values = ["/${var.suga.name}/*"]
+    }
+  }
 }
 
-# # Setup ingress on the container port for the security groups
-resource "aws_security_group_rule" "ingress" {
-  security_group_id = var.alb_security_group
-  self = true
-  from_port = var.container_port
-  to_port = var.container_port
-  protocol = "tcp"
-  type = "ingress"
-}
+
 

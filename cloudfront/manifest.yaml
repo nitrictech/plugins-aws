@@ -1,5 +1,6 @@
-name: aws-cloudfront
+name: cloudfront
 type: entrypoint
+description: "Provisions CloudFront CDN with WAF integration and custom domain support"
 icon: ./icon.svg
 deployment:
   terraform: ./module

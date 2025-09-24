@@ -1,10 +1,28 @@
 
 locals {
   s3_origin_id = "publicOrigin"
+
+  # Collect all origin paths into a flat list
+  origin_paths = flatten([
+    for origin_name, origin in var.suga.origins : [
+      for route in origin.routes : {
+        origin_name = origin_name
+        path        = route.path
+        base_path   = route.base_path
+        type        = origin.type
+        domain_name = origin.domain_name
+        id          = origin.id
+        resources   = origin.resources
+      }
+    ]
+  ])
+
+  # Find default origin (path == "/")
   default_origin = {
-    for k, v in var.suga.origins : k => v
-    if v.path == "/"
+    for entry in local.origin_paths : entry.origin_name => entry
+    if entry.path == "/"
   }
+
   s3_bucket_origins = {
     for k, v in var.suga.origins : k => v
     if contains(keys(v.resources), "aws_s3_bucket")
@@ -21,6 +39,15 @@ locals {
     for k, v in var.suga.origins : k => v
     if contains(keys(v.resources), "aws_lb")
   }
+
+  # Create cache behaviors for non-root paths
+  non_root_origin_paths = {
+    for i, entry in local.origin_paths : "${entry.origin_name}-${i}" => entry
+    if entry.path != "/"
+  }
+
+  # Group paths by origin for the CloudFront function
+  all_paths = [for entry in local.origin_paths : entry.path]
 }
 
 resource "aws_cloudfront_vpc_origin" "vpc_origin" {
@@ -28,11 +55,12 @@ resource "aws_cloudfront_vpc_origin" "vpc_origin" {
 
   vpc_origin_endpoint_config {
     name = each.key
-    arn = each.value.resources["aws_lb"]
-    http_port = each.value.resources["aws_lb:http_port"]
+    arn  = each.value.resources["aws_lb"]
+    # Use standard HTTP port for shared listener
+    http_port = 80
     # Doesn't matter what we set this to, it's not used
     # But 0 is not a legal value
-    https_port = 443
+    https_port             = 443
     origin_protocol_policy = "http-only"
 
     origin_ssl_protocols {
@@ -42,23 +70,7 @@ resource "aws_cloudfront_vpc_origin" "vpc_origin" {
   }
 }
 
-data "aws_ec2_managed_prefix_list" "cloudfront" {
- name = "com.amazonaws.global.cloudfront.origin-facing"
-}
 
-# Allow the cloudfront instance the ability to access the load balancer
-resource "aws_security_group_rule" "ingress" {
-  for_each = local.vpc_origins
-  # FIXME: Only apply to a mutual security that is shared with the ALB
-  security_group_id = each.value.resources["aws_lb:security_group"]
-  # self = true
-  from_port = each.value.resources["aws_lb:http_port"]
-  to_port = each.value.resources["aws_lb:http_port"]
-  protocol = "tcp"
-  type = "ingress"
-
-  prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront.id]
-}
 
 resource "aws_cloudfront_origin_access_control" "lambda_oac" {
   count = length(local.lambda_origins) > 0 ? 1 : 0
@@ -83,9 +95,9 @@ resource "aws_lambda_permission" "allow_cloudfront_to_execute_lambda" {
   for_each = local.lambda_origins
 
   function_name = each.value.resources["aws_lambda_function"]
-  principal = "cloudfront.amazonaws.com"
-  action = "lambda:InvokeFunctionUrl"
-  source_arn = aws_cloudfront_distribution.distribution.arn
+  principal     = "cloudfront.amazonaws.com"
+  action        = "lambda:InvokeFunctionUrl"
+  source_arn    = aws_cloudfront_distribution.distribution.arn
 }
 
 resource "aws_s3_bucket_policy" "allow_bucket_access" {
@@ -101,7 +113,7 @@ resource "aws_s3_bucket_policy" "allow_bucket_access" {
         Principal = {
           Service = "cloudfront.amazonaws.com"
         }
-        Action = "s3:GetObject"
+        Action   = "s3:GetObject"
         Resource = "${each.value.id}/*"
         Condition = {
           StringEquals = {
@@ -118,15 +130,16 @@ resource "aws_cloudfront_function" "api-url-rewrite-function" {
   runtime = "cloudfront-js-1.0"
   comment = "Rewrite API URLs routed to Suga services"
   publish = true
-  code    = templatefile("${path.module}/scripts/url-rewrite.js", {
-    base_paths = join(",", [for k, v in var.suga.origins : v.path])
+  code = templatefile("${path.module}/scripts/url-rewrite.js", {
+    base_paths = join(",", local.all_paths)
   })
 }
 
 # Lambda@Edge function for auth preservation and webhook signing
 resource "aws_iam_role" "lambda_edge_origin_request" {
-  name = "lambda-edge-origin-request-role"
-  
+  count = length(local.lambda_origins) > 0 ? 1 : 0
+  name  = "lambda-edge-origin-request-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -140,14 +153,16 @@ resource "aws_iam_role" "lambda_edge_origin_request" {
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_edge_origin_request_basic" {
-  role       = aws_iam_role.lambda_edge_origin_request.name
+  count      = length(local.lambda_origins) > 0 ? 1 : 0
+  role       = aws_iam_role.lambda_edge_origin_request[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 data "archive_file" "origin_request_lambda" {
+  count       = length(local.lambda_origins) > 0 ? 1 : 0
   type        = "zip"
   output_path = "${path.module}/lambda-origin-request.zip"
-  
+
   source {
     content  = file("${path.module}/scripts/origin-request.js")
     filename = "index.js"
@@ -155,12 +170,13 @@ data "archive_file" "origin_request_lambda" {
 }
 
 resource "aws_lambda_function" "origin_request" {
+  count            = length(local.lambda_origins) > 0 ? 1 : 0
   region           = "us-east-1"
-  filename         = data.archive_file.origin_request_lambda.output_path
+  filename         = data.archive_file.origin_request_lambda[0].output_path
   function_name    = "cloudfront-origin-request"
-  role             = aws_iam_role.lambda_edge_origin_request.arn
+  role             = aws_iam_role.lambda_edge_origin_request[0].arn
   handler          = "index.handler"
-  source_code_hash = data.archive_file.origin_request_lambda.output_base64sha256
+  source_code_hash = data.archive_file.origin_request_lambda[0].output_base64sha256
   runtime          = "nodejs22.x"
   timeout          = 5
   memory_size      = 128
@@ -168,10 +184,11 @@ resource "aws_lambda_function" "origin_request" {
 }
 
 resource "aws_lambda_permission" "allow_cloudfront_origin_request" {
+  count         = length(local.lambda_origins) > 0 ? 1 : 0
   region        = "us-east-1"
   statement_id  = "AllowExecutionFromCloudFront"
   action        = "lambda:GetFunction"
-  function_name = aws_lambda_function.origin_request.function_name
+  function_name = aws_lambda_function.origin_request[0].function_name
   principal     = "edgelambda.amazonaws.com"
 }
 
@@ -235,7 +252,7 @@ resource "aws_wafv2_web_acl" "cloudfront_waf" {
         managed_rule_group_statement {
           name        = rule.value.name
           vendor_name = "AWS"
-          
+
           dynamic "rule_action_override" {
             for_each = rule.value.rule_action_overrides
             content {
@@ -283,8 +300,8 @@ locals {
 
 # Lookup the hosted zone
 data "aws_route53_zone" "parent" {
-  count        = var.custom_domain != null ? 1 : 0
-  name         = "${local.hosted_zone_domain}."
+  count = var.custom_domain != null ? 1 : 0
+  name  = "${local.hosted_zone_domain}."
 }
 
 # Create Route53 A record for the custom domain
@@ -302,10 +319,10 @@ resource "aws_route53_record" "cloudfront_alias" {
 
 # Request ACM certificate for custom domain
 resource "aws_acm_certificate" "cloudfront_cert" {
-  count                     = var.custom_domain != null ? 1 : 0
-  region                   = "us-east-1"  # CloudFront requires certificates in us-east-1
-  domain_name              = var.custom_domain
-  validation_method        = "DNS"
+  count             = var.custom_domain != null ? 1 : 0
+  region            = "us-east-1" # CloudFront requires certificates in us-east-1
+  domain_name       = var.custom_domain
+  validation_method = "DNS"
 
   lifecycle {
     create_before_destroy = true
@@ -313,8 +330,8 @@ resource "aws_acm_certificate" "cloudfront_cert" {
 }
 
 resource "aws_cloudfront_cache_policy" "default_cache_policy" {
-  count = var.default_cache_policy_id == null ? 1 : 0
-  name = "SugaDefaultCachePolicy"
+  count   = var.default_cache_policy_id == null ? 1 : 0
+  name    = "SugaDefaultCachePolicy"
   comment = "Default cache policy for CloudFront distribution for Suga Applications"
 
   # Set TTL defaults to respect cache control headers
@@ -359,18 +376,18 @@ locals {
 resource "aws_route53_record" "cert_validation" {
   for_each = var.custom_domain != null ? {
     for dvo in aws_acm_certificate.cloudfront_cert[0].domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      type   = dvo.resource_record_type
-      value  = dvo.resource_record_value
+      name  = dvo.resource_record_name
+      type  = dvo.resource_record_type
+      value = dvo.resource_record_value
     }
   } : {}
-  
+
   zone_id = data.aws_route53_zone.parent[0].zone_id
   name    = each.value.name
   type    = each.value.type
   records = [each.value.value]
   ttl     = 60
-  
+
   allow_overwrite = true
 }
 
@@ -383,30 +400,31 @@ resource "aws_acm_certificate_validation" "cloudfront_cert" {
 }
 
 resource "aws_cloudfront_distribution" "distribution" {
-  enabled = true
+  enabled    = true
   web_acl_id = var.waf_enabled ? aws_wafv2_web_acl.cloudfront_waf[0].arn : null
-  aliases = var.custom_domain != null ? [var.custom_domain] : []
+  aliases    = var.custom_domain != null ? [var.custom_domain] : []
 
   dynamic "origin" {
     for_each = local.non_vpc_origins
 
     content {
-      # TODO: Only have services return their domain name instead? 
-      domain_name = origin.value.domain_name
-      origin_id = "${origin.key}"
+      # TODO: Only have services return their domain name instead?
+      domain_name              = origin.value.domain_name
+      origin_id                = origin.key
       origin_access_control_id = contains(keys(origin.value.resources), "aws_lambda_function") ? aws_cloudfront_origin_access_control.lambda_oac[0].id : contains(keys(origin.value.resources), "aws_s3_bucket") ? aws_cloudfront_origin_access_control.s3_oac[0].id : null
-      origin_path = origin.value.base_path
+      # Use the first route's base_path for the origin itself (for default behavior)
+      origin_path = length(origin.value.routes) > 0 ? origin.value.routes[0].base_path : ""
 
       dynamic "custom_origin_config" {
         # Lambda functions with OAC should not have custom_origin_config
         for_each = !contains(keys(origin.value.resources), "aws_s3_bucket") ? [1] : []
 
         content {
-          origin_read_timeout = 30
+          origin_read_timeout    = 30
           origin_protocol_policy = "https-only"
-          origin_ssl_protocols = ["TLSv1.2", "SSLv3"]
-          http_port = 80
-          https_port = 443
+          origin_ssl_protocols   = ["TLSv1.2", "SSLv3"]
+          http_port              = 80
+          https_port             = 443
         }
       }
     }
@@ -417,7 +435,16 @@ resource "aws_cloudfront_distribution" "distribution" {
 
     content {
       domain_name = origin.value.domain_name
-      origin_id = "${origin.key}"
+      origin_id   = origin.key
+      # Concatenate fargate's base path with any additional configured base_path
+      # fargate provides "/<service-name>", add configured base_path if present
+      # Use the first route's base_path for the origin itself (for default behavior)
+      origin_path = try(
+        length(origin.value.routes) > 0 && origin.value.routes[0].base_path != null && origin.value.routes[0].base_path != "" ?
+        "${origin.value.resources["aws_lb:path"]}/${trimprefix(origin.value.routes[0].base_path, "/")}" :
+        origin.value.resources["aws_lb:path"],
+        ""
+      )
       vpc_origin_config {
         vpc_origin_id = aws_cloudfront_vpc_origin.vpc_origin[origin.key].id
       }
@@ -425,29 +452,24 @@ resource "aws_cloudfront_distribution" "distribution" {
   }
 
   dynamic "ordered_cache_behavior" {
+    # separate out as lambda@edge cannot be used with VPC origins
+    # create behaviors for VPC origins with non-root paths
     for_each = {
-      for k, v in var.suga.origins : k => v
-      if v.path != "/"
+      for key, entry in local.non_root_origin_paths : key => entry
+      if contains(keys(entry.resources), "aws_lb")
     }
 
     content {
       path_pattern = "${ordered_cache_behavior.value.path}*"
 
       function_association {
-        event_type = "viewer-request"
+        event_type   = "viewer-request"
         function_arn = aws_cloudfront_function.api-url-rewrite-function.arn
       }
 
-      # Add Lambda@Edge for auth preservation and webhook signing
-      lambda_function_association {
-        event_type   = "origin-request"
-        lambda_arn   = aws_lambda_function.origin_request.qualified_arn
-        include_body = true
-      }
-
-      allowed_methods = ["GET","HEAD","OPTIONS","PUT","POST","PATCH","DELETE"]
-      cached_methods = ["GET","HEAD","OPTIONS"]
-      target_origin_id = "${ordered_cache_behavior.key}"
+      allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods   = ["GET", "HEAD", "OPTIONS"]
+      target_origin_id = ordered_cache_behavior.value.origin_name
 
       # See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-policy-origin-cache-headers
       # Use AWS managed cache policy - UseOriginCacheHeaders
@@ -456,7 +478,62 @@ resource "aws_cloudfront_distribution" "distribution" {
       # FIXME: Disabling cache policy for now
       # as adding origin cache headers appears to cause issues with Lambda function URLs
       cache_policy_id = local.default_cache_policy_id
-      
+
+      # See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html#managed-origin-request-policy-all-viewer
+      # Use AWS managed origin request policy - AllViewer
+      # This forwards all headers, query strings, and cookies to the origin
+      origin_request_policy_id = var.default_origin_request_policy_id
+
+      # Legacy configuration for custom cache behavior
+      # forwarded_values {
+      #   query_string = true
+      #   cookies {
+      #     forward = "all"
+      #   }
+      #   headers = ["Authorization"]
+      # }
+
+      viewer_protocol_policy = "https-only"
+    }
+  }
+
+  dynamic "ordered_cache_behavior" {
+    # create behaviors for non-VPC origins with non-root paths
+    for_each = {
+      for key, entry in local.non_root_origin_paths : key => entry
+      if !contains(keys(entry.resources), "aws_lb")
+    }
+
+    content {
+      path_pattern = "${ordered_cache_behavior.value.path}*"
+
+      function_association {
+        event_type   = "viewer-request"
+        function_arn = aws_cloudfront_function.api-url-rewrite-function.arn
+      }
+
+      # Add Lambda@Edge for auth preservation and webhook signing (only if a Lambda origin)
+      dynamic "lambda_function_association" {
+        for_each = contains(keys(ordered_cache_behavior.value.resources), "aws_lambda_function") ? [1] : []
+        content {
+          event_type   = "origin-request"
+          lambda_arn   = aws_lambda_function.origin_request[0].qualified_arn
+          include_body = true
+        }
+      }
+
+      allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods   = ["GET", "HEAD", "OPTIONS"]
+      target_origin_id = ordered_cache_behavior.value.origin_name
+
+      # See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-policy-origin-cache-headers
+      # Use AWS managed cache policy - UseOriginCacheHeaders
+      # This policy honors the cache headers from the origin
+      # cache_policy_id = "83da9c7e-98b4-4e11-a168-04f0df8e2c65"
+      # FIXME: Disabling cache policy for now
+      # as adding origin cache headers appears to cause issues with Lambda function URLs
+      cache_policy_id = local.default_cache_policy_id
+
       # See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html#managed-origin-request-policy-all-viewer
       # Use AWS managed origin request policy - AllViewer
       # This forwards all headers, query strings, and cookies to the origin
@@ -476,16 +553,20 @@ resource "aws_cloudfront_distribution" "distribution" {
   }
 
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "${keys(local.default_origin)[0]}"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods         = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id       = keys(local.default_origin)[0]
     viewer_protocol_policy = "redirect-to-https"
 
-    # Add Lambda@Edge for auth preservation and webhook signing
-    lambda_function_association {
-      event_type   = "origin-request"
-      lambda_arn   = aws_lambda_function.origin_request.qualified_arn
-      include_body = true
+    # Add Lambda@Edge for auth preservation and webhook signing (only if not a Lambda origin and Lambda@Edge exists)
+    dynamic "lambda_function_association" {
+      for_each = length(local.default_origin) > 0 && contains(keys(local.default_origin[keys(local.default_origin)[0]].resources), "aws_lambda_function") ? [1] : []
+
+      content {
+        event_type   = "origin-request"
+        lambda_arn   = aws_lambda_function.origin_request[0].qualified_arn
+        include_body = true
+      }
     }
 
     # Legacy configuration for custom cache behavior
@@ -503,7 +584,7 @@ resource "aws_cloudfront_distribution" "distribution" {
     # FIXME: Disabling cache policy for now
     # as adding origin cache headers appears to cause issues with Lambda function URLs
     cache_policy_id = local.default_cache_policy_id
-    
+
     # Use AWS managed origin request policy - AllViewer
     # This forwards all headers, query strings, and cookies to the origin
     origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"

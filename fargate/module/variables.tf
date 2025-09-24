@@ -10,6 +10,7 @@ variable "suga" {
 
 variable "container_port" {
   type    = number
+  default = 8080
 }
 
 variable "alb_arn" {
