@@ -5,39 +5,7 @@ description: "Creates a security group rule for a set of specified security grou
 icon: ./icon.svg
 deployment:
   terraform: ./module
-inputs:
-  security_group_ids:
-    type: list(string)
-    required: true
-    description: "List of security group IDs to which the rule will be applied (e.g. `['sg-0123456789abcdef0', 'sg-0fedcba9876543210']`)"
-  from_port:
-    type: number
-    required: true
-    description: "Starting port of the port range for the rule (e.g. `80` for HTTP)"
-  to_port:
-    type: number
-    required: true
-    description: "Ending port of the port range for the rule (e.g. `80` for HTTP)"
-  type:
-    type: string  
-    required: true
-    description: "Type of rule, either `ingress` (inbound) or egress (outbound)"`
-  protocol:
-    type: string
-    required: true
-    description: "Protocol for the rule (e.g. `tcp`, `udp`, `icmp`, or `-1` for all protocols)"
-  cidr_blocks:
-    type: list(string)
-    description: "List of CIDR blocks to which the rule will apply"
-  prefix_list_names:
-    type: list(string)
-    description: "List of managed prefix list names to which the rule will apply (e.g. `['pl-0123456789abcdef0']`)"
-  self:
-    type: bool
-    description: "If true, the rule will apply to the security group itself"
+inputs: {}
 
-outputs:
-  security_group_rule_ids:
-    type: list(string)
-    description: "The IDs of the created security group rules"
+outputs: {}
   
