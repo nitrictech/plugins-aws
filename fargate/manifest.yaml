@@ -1,4 +1,4 @@
-name: aws-fargate
+name: fargate
 type: service
 description: "Provisions ECS Fargate services with load balancer integration and container orchestration"
 icon: ./icon.svg

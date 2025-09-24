@@ -1,4 +1,4 @@
-name: aws-vpc
+name: vpc
 display_name: VPC
 type: infra
 description: "Provisions VPC with public/private subnets and routing tables"

@@ -1,4 +1,4 @@
-name: aws-iam-role
+name: iam-role
 display_name: IAM Role
 type: identity
 description: "Creates IAM roles with trust policies for service authentication"

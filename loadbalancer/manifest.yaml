@@ -1,4 +1,4 @@
-name: aws-loadbalancer
+name: loadbalancer
 display_name: Load Balancer
 type: infra
 description: "Creates Application Load Balancer for distributing traffic across multiple targets"

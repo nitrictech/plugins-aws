@@ -1,4 +1,4 @@
-name: aws-lambda
+name: lambda
 type: service
 description: "Deploys Services as container running on AWS Lambda, with IAM roles and optional VPC configuration"
 icon: ./icon.svg

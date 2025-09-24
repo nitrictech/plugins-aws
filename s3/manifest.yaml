@@ -1,4 +1,4 @@
-name: aws-s3-bucket
+name: s3-bucket
 type: storage
 description: "Provisions S3 buckets for object storage with configurable access permissions"
 icon: ./icon.svg
