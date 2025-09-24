@@ -1,10 +1,28 @@
 
 locals {
   s3_origin_id = "publicOrigin"
+
+  # Collect all origin paths into a flat list
+  origin_paths = flatten([
+    for origin_name, origin in var.suga.origins : [
+      for route in origin.routes : {
+        origin_name = origin_name
+        path        = route.path
+        base_path   = route.base_path
+        type        = origin.type
+        domain_name = origin.domain_name
+        id          = origin.id
+        resources   = origin.resources
+      }
+    ]
+  ])
+
+  # Find default origin (path == "/")
   default_origin = {
-    for k, v in var.suga.origins : k => v
-    if v.path == "/"
+    for entry in local.origin_paths : entry.origin_name => entry
+    if entry.path == "/"
   }
+
   s3_bucket_origins = {
     for k, v in var.suga.origins : k => v
     if contains(keys(v.resources), "aws_s3_bucket")
@@ -21,6 +39,15 @@ locals {
     for k, v in var.suga.origins : k => v
     if contains(keys(v.resources), "aws_lb")
   }
+
+  # Create cache behaviors for non-root paths
+  non_root_origin_paths = {
+    for i, entry in local.origin_paths : "${entry.origin_name}-${i}" => entry
+    if entry.path != "/"
+  }
+
+  # Group paths by origin for the CloudFront function
+  all_paths = [for entry in local.origin_paths : entry.path]
 }
 
 resource "aws_cloudfront_vpc_origin" "vpc_origin" {
@@ -104,7 +131,7 @@ resource "aws_cloudfront_function" "api-url-rewrite-function" {
   comment = "Rewrite API URLs routed to Suga services"
   publish = true
   code = templatefile("${path.module}/scripts/url-rewrite.js", {
-    base_paths = join(",", [for k, v in var.suga.origins : v.path])
+    base_paths = join(",", local.all_paths)
   })
 }
 
@@ -381,11 +408,12 @@ resource "aws_cloudfront_distribution" "distribution" {
     for_each = local.non_vpc_origins
 
     content {
-      # TODO: Only have services return their domain name instead? 
+      # TODO: Only have services return their domain name instead?
       domain_name              = origin.value.domain_name
       origin_id                = origin.key
       origin_access_control_id = contains(keys(origin.value.resources), "aws_lambda_function") ? aws_cloudfront_origin_access_control.lambda_oac[0].id : contains(keys(origin.value.resources), "aws_s3_bucket") ? aws_cloudfront_origin_access_control.s3_oac[0].id : null
-      origin_path              = origin.value.base_path
+      # Use the first route's base_path for the origin itself (for default behavior)
+      origin_path = length(origin.value.routes) > 0 ? origin.value.routes[0].base_path : ""
 
       dynamic "custom_origin_config" {
         # Lambda functions with OAC should not have custom_origin_config
@@ -410,9 +438,10 @@ resource "aws_cloudfront_distribution" "distribution" {
       origin_id   = origin.key
       # Concatenate fargate's base path with any additional configured base_path
       # fargate provides "/<service-name>", add configured base_path if present
+      # Use the first route's base_path for the origin itself (for default behavior)
       origin_path = try(
-        origin.value.base_path != null && origin.value.base_path != "" ?
-        "${origin.value.resources["aws_lb:path"]}/${trimprefix(origin.value.base_path, "/")}" :
+        length(origin.value.routes) > 0 && origin.value.routes[0].base_path != null && origin.value.routes[0].base_path != "" ?
+        "${origin.value.resources["aws_lb:path"]}/${trimprefix(origin.value.routes[0].base_path, "/")}" :
         origin.value.resources["aws_lb:path"],
         ""
       )
@@ -424,7 +453,11 @@ resource "aws_cloudfront_distribution" "distribution" {
 
   dynamic "ordered_cache_behavior" {
     # separate out as lambda@edge cannot be used with VPC origins
-    for_each = length(local.vpc_origins) > 0 ? local.vpc_origins : {}
+    # create behaviors for VPC origins with non-root paths
+    for_each = {
+      for key, entry in local.non_root_origin_paths : key => entry
+      if contains(keys(entry.resources), "aws_lb")
+    }
 
     content {
       path_pattern = "${ordered_cache_behavior.value.path}*"
@@ -436,7 +469,7 @@ resource "aws_cloudfront_distribution" "distribution" {
 
       allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
       cached_methods   = ["GET", "HEAD", "OPTIONS"]
-      target_origin_id = ordered_cache_behavior.key
+      target_origin_id = ordered_cache_behavior.value.origin_name
 
       # See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-policy-origin-cache-headers
       # Use AWS managed cache policy - UseOriginCacheHeaders
@@ -465,9 +498,10 @@ resource "aws_cloudfront_distribution" "distribution" {
   }
 
   dynamic "ordered_cache_behavior" {
+    # create behaviors for non-VPC origins with non-root paths
     for_each = {
-      for k, v in local.non_vpc_origins : k => v
-      if v.path != "/"
+      for key, entry in local.non_root_origin_paths : key => entry
+      if !contains(keys(entry.resources), "aws_lb")
     }
 
     content {
@@ -490,7 +524,7 @@ resource "aws_cloudfront_distribution" "distribution" {
 
       allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
       cached_methods   = ["GET", "HEAD", "OPTIONS"]
-      target_origin_id = ordered_cache_behavior.key
+      target_origin_id = ordered_cache_behavior.value.origin_name
 
       # See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html#managed-cache-policy-origin-cache-headers
       # Use AWS managed cache policy - UseOriginCacheHeaders
@@ -526,7 +560,7 @@ resource "aws_cloudfront_distribution" "distribution" {
 
     # Add Lambda@Edge for auth preservation and webhook signing (only if not a Lambda origin and Lambda@Edge exists)
     dynamic "lambda_function_association" {
-      for_each = contains(keys(local.default_origin[keys(local.default_origin)[0]].resources), "aws_lambda_function") ? [1] : []
+      for_each = length(local.default_origin) > 0 && contains(keys(local.default_origin[keys(local.default_origin)[0]].resources), "aws_lambda_function") ? [1] : []
 
       content {
         event_type   = "origin-request"

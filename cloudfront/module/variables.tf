@@ -2,10 +2,12 @@ variable "suga" {
   type = object({
     name     = string
     stack_id = string
-    # A map of path to origin
+    # A map of origin name to origin config with multiple route mappings
     origins = map(object({
-      path        = string
-      base_path   = string
+      routes = list(object({
+        path      = string
+        base_path = string
+      }))
       type        = string
       domain_name = string
       id          = string
