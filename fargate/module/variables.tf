@@ -14,7 +14,7 @@ variable "container_port" {
 }
 
 variable "alb_arn" {
-  type    = string
+  type = string
 }
 
 variable "alb_security_group" {

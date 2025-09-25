@@ -1,6 +1,6 @@
 variable "suga" {
   type = object({
-    name = string
+    name     = string
     stack_id = string
   })
 }
