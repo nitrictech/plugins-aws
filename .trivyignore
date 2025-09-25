@@ -1,0 +1,12 @@
+# Trivy ignore file for Suga GCP Plugins
+# https://aquasecurity.github.io/trivy/latest/docs/configuration/filtering/
+
+# Example: Ignore specific checks that may not apply to plugin modules
+# AVD-GCP-0011  # Uncomment to ignore specific GCP checks
+# AVD-GCP-0001  # Uncomment to ignore public access warnings if intentional
+
+# Ignore directories
+.git/
+.terraform/
+node_modules/
+security-reports/
