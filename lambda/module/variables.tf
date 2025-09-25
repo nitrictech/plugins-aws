@@ -53,3 +53,8 @@ variable "security_group_ids" {
   type    = list(string)
   default = []
 }
+
+variable "image_scan_on_push" {
+  type    = bool
+  default = true
+}

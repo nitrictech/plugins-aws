@@ -13,7 +13,7 @@ variable "listener_port" {
 }
 variable "internal" {
   type    = bool
-  default = false
+  default = true
 }
 
 variable "security_groups" {

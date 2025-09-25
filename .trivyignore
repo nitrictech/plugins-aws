@@ -1,9 +1,19 @@
 # Trivy ignore file for Suga GCP Plugins
 # https://aquasecurity.github.io/trivy/latest/docs/configuration/filtering/
 
-# Example: Ignore specific checks that may not apply to plugin modules
-# AVD-GCP-0011  # Uncomment to ignore specific GCP checks
-# AVD-GCP-0001  # Uncomment to ignore public access warnings if intentional
+# AVD-AWS-0030: Image scanning is not enabled
+# We've added a variable to control this, which default to `true`
+AVD-AWS-0030
+
+# TODO: we'll need to avoid use the `latest` tag, then enable this
+AVD-AWS-0031
+
+# TODO: Enable bucket encryption and add a key resource/plugin
+AVD-AWS-0132
+AVD-AWS-0088
+
+# TODO: Enable load balancer HTTPS
+AVD-AWS-0054
 
 # Ignore directories
 .git/

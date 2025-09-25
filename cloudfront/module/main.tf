@@ -190,6 +190,7 @@ resource "aws_lambda_permission" "allow_cloudfront_origin_request" {
   action        = "lambda:GetFunction"
   function_name = aws_lambda_function.origin_request[0].function_name
   principal     = "edgelambda.amazonaws.com"
+  source_arn    = aws_cloudfront_distribution.distribution.arn
 }
 
 resource "aws_wafv2_web_acl" "cloudfront_waf" {

@@ -30,6 +30,9 @@ locals {
 # Create an ECR repository
 resource "aws_ecr_repository" "repo" {
   name = var.suga.name
+  image_scanning_configuration {
+    scan_on_push = var.image_scan_on_push
+  }
 }
 
 data "aws_ecr_authorization_token" "ecr_auth" {
