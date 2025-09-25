@@ -1,13 +1,13 @@
 variable "suga" {
   type = object({
-    name       = string
-    stack_id   = string
-    image_id   = string
-    schedules  = optional(map(object({
+    name     = string
+    stack_id = string
+    image_id = string
+    schedules = optional(map(object({
       cron_expression = string
       path            = string
     })), {})
-    env        = map(string)
+    env = map(string)
     identities = map(object({
       exports = map(string)
     }))
@@ -52,4 +52,9 @@ variable "subnet_ids" {
 variable "security_group_ids" {
   type    = list(string)
   default = []
+}
+
+variable "image_scan_on_push" {
+  type    = bool
+  default = true
 }

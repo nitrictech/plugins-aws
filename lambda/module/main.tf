@@ -7,8 +7,8 @@ locals {
   # Apply the either-or operator rule: if DOM is *, set DOW to ?
   transformed_cron_expression = {
     for key, fields in local.split_cron_expression : key => [
-      for i, field in fields : 
-        (i == 4 && fields[2] == "*" && field == "*") ? "?" : field
+      for i, field in fields :
+      (i == 4 && fields[2] == "*" && field == "*") ? "?" : field
     ]
   }
 
@@ -19,10 +19,10 @@ locals {
   convert_cron_to_aws = {
     for key, schedule in var.suga.schedules : key => {
       cron_expression = schedule.cron_expression
-      path           = schedule.path
+      path            = schedule.path
       # Convert the standard cron expression to an AWS CloudWatch cron expression
       # Apply the either-or operator rule and add year field
-      aws_cron       = "cron(${join(" ", local.transformed_cron_expression[key])} *)"
+      aws_cron = "cron(${join(" ", local.transformed_cron_expression[key])} *)"
     }
   }
 }
@@ -30,6 +30,9 @@ locals {
 # Create an ECR repository
 resource "aws_ecr_repository" "repo" {
   name = var.suga.name
+  image_scanning_configuration {
+    scan_on_push = var.image_scan_on_push
+  }
 }
 
 data "aws_ecr_authorization_token" "ecr_auth" {
@@ -81,7 +84,7 @@ resource "aws_lambda_function" "function" {
   environment {
     variables = merge(var.environment, var.suga.env, {
       SUGA_STACK_ID = var.suga.stack_id
-      PORT = "8080",
+      PORT          = "8080",
     })
   }
 
@@ -136,8 +139,8 @@ resource "aws_iam_role_policy" "role_policy" {
     Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow",
-        Action = "lambda:InvokeFunction",
+        Effect   = "Allow",
+        Action   = "lambda:InvokeFunction",
         Resource = aws_lambda_function.function.arn
       }
     ]
@@ -158,7 +161,7 @@ resource "aws_scheduler_schedule" "schedule" {
     role_arn = aws_iam_role.role.arn
 
     input = jsonencode({
-        "path" = each.value.path
+      "path" = each.value.path
     })
   }
 }

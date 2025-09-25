@@ -4,7 +4,7 @@ variable "load_balancer_type" {
 }
 
 variable "name" {
-  type    = string
+  type = string
 }
 
 variable "listener_port" {
@@ -13,15 +13,15 @@ variable "listener_port" {
 }
 variable "internal" {
   type    = bool
-  default = false
+  default = true
 }
 
 variable "security_groups" {
-  type    = list(string)
+  type = list(string)
 }
 
 variable "subnets" {
-  type    = list(string)
+  type = list(string)
 }
 
 variable "cidr_blocks" {

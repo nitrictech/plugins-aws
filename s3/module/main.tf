@@ -9,6 +9,15 @@ resource "aws_s3_bucket" "bucket" {
   tags   = var.tags
 }
 
+resource "aws_s3_bucket_public_access_block" "block_public" {
+  bucket = aws_s3_bucket.bucket.id
+
+  restrict_public_buckets = true
+  ignore_public_acls      = true
+  block_public_acls       = true
+  block_public_policy     = true
+}
+
 locals {
   read_actions = [
     "s3:GetObject",
@@ -21,19 +30,19 @@ locals {
     "s3:DeleteObject",
   ]
   relative_content_path = "${path.root}/../../../${var.suga.content_path}"
-  content_files = var.suga.content_path != "" ? fileset(local.relative_content_path, "**/*") : []
+  content_files         = var.suga.content_path != "" ? fileset(local.relative_content_path, "**/*") : []
 }
 
 # Upload each file to S3 (only if files exist)
 resource "aws_s3_object" "files" {
   for_each = toset(local.content_files)
-  
+
   bucket = aws_s3_bucket.bucket.bucket
   key    = each.value
   source = "${local.relative_content_path}/${each.value}"
-  
+
   etag = filemd5("${local.relative_content_path}/${each.value}")
-  
+
   content_type = lookup({
     "html" = "text/html"
     "css"  = "text/css"
@@ -68,7 +77,7 @@ resource "aws_iam_role_policy" "access_policy" {
           contains(each.value.actions, "delete") ? local.delete_actions : []
           )
         )
-        Effect   = "Allow"
+        Effect = "Allow"
         Resource = [
           aws_s3_bucket.bucket.arn,
           "${aws_s3_bucket.bucket.arn}/*"

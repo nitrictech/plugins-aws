@@ -110,33 +110,33 @@ resource "aws_ecs_task_definition" "service" {
 
       environment = concat([
         {
-          name = "SUGA_SERVICE_NAME"
+          name  = "SUGA_SERVICE_NAME"
           value = var.suga.name
         },
         {
-          name = "SUGA_STACK_ID"
+          name  = "SUGA_STACK_ID"
           value = var.suga.stack_id
         },
         {
-          name = "PORT"
-          value = "9001"        
+          name  = "PORT"
+          value = "9001"
         },
         {
-          name = "FARGATE_PROXY_PORT"
+          name  = "FARGATE_PROXY_PORT"
           value = "${tostring(var.container_port)}"
         }
-      ],
-      [
-        for k, v in var.environment : {
-          name  = k
-          value = "${tostring(v)}"
-        }
-      ],
-      [
-        for k, v in var.suga.env : {
-          name  = k
-          value = "${tostring(v)}"
-        }
+        ],
+        [
+          for k, v in var.environment : {
+            name  = k
+            value = "${tostring(v)}"
+          }
+        ],
+        [
+          for k, v in var.suga.env : {
+            name  = k
+            value = "${tostring(v)}"
+          }
       ])
 
       logConfiguration = {
@@ -165,14 +165,14 @@ resource "aws_ecs_cluster" "cluster" {
 
 # Create an ESC service for the above task definition
 resource "aws_ecs_service" "service" {
-  name = "${var.suga.stack_id}-${var.suga.name}"
-  cluster = aws_ecs_cluster.cluster.id
+  name            = "${var.suga.stack_id}-${var.suga.name}"
+  cluster         = aws_ecs_cluster.cluster.id
   task_definition = aws_ecs_task_definition.service.arn
-  desired_count = 1
-  launch_type = "FARGATE"
+  desired_count   = 1
+  launch_type     = "FARGATE"
 
   network_configuration {
-    subnets = var.subnets
+    subnets         = var.subnets
     security_groups = concat([var.alb_security_group], var.security_groups)
   }
   load_balancer {
@@ -184,17 +184,17 @@ resource "aws_ecs_service" "service" {
 
 # Create target group
 resource "aws_lb_target_group" "service" {
-  name        = local.sanitized_target_group_name
-  port        = var.container_port
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
+  name     = local.sanitized_target_group_name
+  port     = var.container_port
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
 
   target_type = "ip"
 
   health_check {
-    path = "/${var.suga.name}/x-suga-health"
-    interval = 30
-    timeout = 10
+    path              = "/${var.suga.name}/x-suga-health"
+    interval          = 30
+    timeout           = 10
     healthy_threshold = 2
   }
 }
@@ -202,7 +202,7 @@ resource "aws_lb_target_group" "service" {
 # Reference the shared HTTP listener created by the loadbalancer module
 data "aws_lb_listener" "shared_http" {
   load_balancer_arn = var.alb_arn
-  port = 80
+  port              = 80
 }
 
 # Create listener rule for this service's target group

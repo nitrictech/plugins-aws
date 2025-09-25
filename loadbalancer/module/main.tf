@@ -4,6 +4,8 @@ resource "aws_lb" "lb" {
   load_balancer_type = var.load_balancer_type
   security_groups    = var.security_groups
   subnets            = var.subnets
+
+  drop_invalid_header_fields = true
 }
 
 # Get managed prefix lists by name

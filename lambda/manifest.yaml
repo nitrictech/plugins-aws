@@ -18,6 +18,9 @@ inputs:
   timeout:
     type: number
     description: "Maximum execution time in seconds 1-900 (e.g. `300`)"
+  image_scan_on_push:
+    type: bool
+    description: "Scan the image for vulnerabilities after it is pushed to Amazon ECR (e.g. `true`)"
   memory:
     type: number
     description: "Amount of memory in MB 128-10240 (e.g. `1024`)"

@@ -1,0 +1,68 @@
+name: "Test"
+
+on:
+  pull_request:
+    paths:
+      - "**/*.tf"
+      - "**/*.tfvars"
+      - ".github/workflows/test.yml"
+  workflow_dispatch:
+
+jobs:
+  terraform-test:
+    name: Test Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.8.0"
+
+      - name: Install TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run all tests
+        run: make test
+
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Terraform Lint Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Modules Checked" >> $GITHUB_STEP_SUMMARY
+          modules=$(find . -name "*.tf" -type f | xargs dirname | sort -u)
+          echo "The following Terraform modules were validated:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for module in $modules; do
+            echo "- \`$module\`" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Checks Performed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Terraform Format Check" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Terraform Validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ TFLint Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Security Scan (Trivy)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Local Development" >> $GITHUB_STEP_SUMMARY
+          echo "Run the same checks locally with:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "make test          # Run all tests" >> $GITHUB_STEP_SUMMARY
+          echo "make format        # Auto-format files" >> $GITHUB_STEP_SUMMARY
+          echo "make scan          # Run security scan" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
