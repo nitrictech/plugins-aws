@@ -75,7 +75,7 @@ resource "aws_cloudfront_vpc_origin" "vpc_origin" {
 resource "aws_cloudfront_origin_access_control" "lambda_oac" {
   count = length(local.lambda_origins) > 0 ? 1 : 0
 
-  name                              = "lambda-oac"
+  name                              = "${var.suga.stack_id}-lambda-oac"
   origin_access_control_origin_type = "lambda"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
@@ -84,7 +84,7 @@ resource "aws_cloudfront_origin_access_control" "lambda_oac" {
 resource "aws_cloudfront_origin_access_control" "s3_oac" {
   count = length(local.s3_bucket_origins) > 0 ? 1 : 0
 
-  name                              = "s3-oac"
+  name                              = "${var.suga.stack_id}-s3-oac"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
