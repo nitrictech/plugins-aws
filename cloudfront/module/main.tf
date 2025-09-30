@@ -173,7 +173,7 @@ resource "aws_lambda_function" "origin_request" {
   count            = length(local.lambda_origins) > 0 ? 1 : 0
   region           = "us-east-1"
   filename         = data.archive_file.origin_request_lambda[0].output_path
-  function_name    = "cloudfront-origin-request"
+  function_name    = "${var.suga.stack_id}-cloudfront-origin-request"
   role             = aws_iam_role.lambda_edge_origin_request[0].arn
   handler          = "index.handler"
   source_code_hash = data.archive_file.origin_request_lambda[0].output_base64sha256
