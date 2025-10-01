@@ -126,7 +126,7 @@ resource "aws_s3_bucket_policy" "allow_bucket_access" {
 }
 
 resource "aws_cloudfront_function" "api-url-rewrite-function" {
-  name    = "api-url-rewrite-function"
+  name    = "${var.suga.stack_id}-api-url-rewrite-function"
   runtime = "cloudfront-js-1.0"
   comment = "Rewrite API URLs routed to Suga services"
   publish = true
