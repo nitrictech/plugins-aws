@@ -126,7 +126,7 @@ resource "aws_s3_bucket_policy" "allow_bucket_access" {
 }
 
 resource "aws_cloudfront_function" "api-url-rewrite-function" {
-  name    = "api-url-rewrite-function"
+  name    = "${var.suga.stack_id}-api-url-rewrite-function"
   runtime = "cloudfront-js-1.0"
   comment = "Rewrite API URLs routed to Suga services"
   publish = true
@@ -138,7 +138,7 @@ resource "aws_cloudfront_function" "api-url-rewrite-function" {
 # Lambda@Edge function for auth preservation and webhook signing
 resource "aws_iam_role" "lambda_edge_origin_request" {
   count = length(local.lambda_origins) > 0 ? 1 : 0
-  name  = "lambda-edge-origin-request-role"
+  name  = "${var.suga.stack_id}-lambda-edge-origin-request-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -173,7 +173,7 @@ resource "aws_lambda_function" "origin_request" {
   count            = length(local.lambda_origins) > 0 ? 1 : 0
   region           = "us-east-1"
   filename         = data.archive_file.origin_request_lambda[0].output_path
-  function_name    = "cloudfront-origin-request"
+  function_name    = "${var.suga.stack_id}-cloudfront-origin-request"
   role             = aws_iam_role.lambda_edge_origin_request[0].arn
   handler          = "index.handler"
   source_code_hash = data.archive_file.origin_request_lambda[0].output_base64sha256
