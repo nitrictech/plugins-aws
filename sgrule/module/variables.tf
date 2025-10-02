@@ -1,3 +1,9 @@
+variable "suga" {
+  type = object({
+    stack_id = string
+  })
+}
+
 variable "security_group_ids" {
   type        = list(string)
   description = "List of security group IDs to which the rule will be applied"

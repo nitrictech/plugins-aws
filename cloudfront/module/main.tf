@@ -332,7 +332,7 @@ resource "aws_acm_certificate" "cloudfront_cert" {
 
 resource "aws_cloudfront_cache_policy" "default_cache_policy" {
   count   = var.default_cache_policy_id == null ? 1 : 0
-  name    = "SugaDefaultCachePolicy"
+  name    = "${var.suga.stack_id}-SugaDefaultCachePolicy"
   comment = "Default cache policy for CloudFront distribution for Suga Applications"
 
   # Set TTL defaults to respect cache control headers
