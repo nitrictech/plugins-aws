@@ -1,6 +1,6 @@
 # Create an ECR repository
 resource "aws_ecr_repository" "repo" {
-  name = var.suga.name
+  name = "${var.suga.stack_id}-${var.suga.name}"
 }
 
 data "aws_ecr_authorization_token" "ecr_auth" {

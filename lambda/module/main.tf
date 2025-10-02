@@ -29,7 +29,7 @@ locals {
 
 # Create an ECR repository
 resource "aws_ecr_repository" "repo" {
-  name = var.suga.name
+  name = "${var.suga.stack_id}-${var.suga.name}"
   image_scanning_configuration {
     scan_on_push = var.image_scan_on_push
   }
