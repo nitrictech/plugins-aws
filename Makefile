@@ -21,21 +21,21 @@ format-check: ## Check formatting of all Terraform files
 
 validate: ## Validate all Terraform files
 	@echo "Validating..."
-	@find . -name "*.tf" -type f | xargs dirname | sort -u | while read dir; do \
+	@find . -name "*.tf" -type f | xargs dirname | sort -u | grep -v "\.terraform" | while read dir; do \
 		echo "  $$dir"; \
 		cd "$$dir" && terraform init -backend=false -get=true -upgrade=false >/dev/null && terraform validate && cd - >/dev/null || exit 1; \
 	done
 
 lint: ## Lint using tflint
 	@echo "Running tflint..."
-	@find . -name "*.tf" -type f | xargs dirname | sort -u | while read dir; do \
+	@find . -name "*.tf" -type f | xargs dirname | sort -u | grep -v "\.terraform" | while read dir; do \
 		echo "  $$dir"; \
-		docker run --rm -v "$$(pwd)/$$dir:/data" -t ghcr.io/terraform-linters/tflint --format=compact --minimum-failure-severity=error; \
+		docker run --rm -v "$$(pwd):/data" -w "/data/$$dir" -t ghcr.io/terraform-linters/tflint --format=compact --minimum-failure-severity=error; \
 	done
 
 scan: ## Run security scan using Trivy
 	@echo "Running security scan..."
-	@docker run --rm -v "$$(pwd):/work" -w /work ghcr.io/aquasecurity/trivy:latest config . --format=table --quiet --exit-code 1 --severity $(TRIVY_SEVERITY)
+	@docker run --rm -v "$$(pwd):/work" -w /work ghcr.io/aquasecurity/trivy:latest config . --format=table --quiet --exit-code 1 --severity $(TRIVY_SEVERITY) --skip-dirs '**/.terraform/**'
 
 test: format-check validate lint scan ## Run all tests: format-check, validate, lint, and scan
 	@echo "All tests passed!"
