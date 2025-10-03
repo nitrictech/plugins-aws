@@ -10,7 +10,7 @@ locals {
 module "vpc" {
   source = "terraform-aws-modules/vpc/aws"
 
-  name = var.name
+  name = "${var.suga.stack_id}-${var.name}"
   cidr = var.networking.cidr_block
 
   azs             = local.azs

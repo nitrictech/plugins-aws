@@ -1,10 +1,16 @@
-variable "load_balancer_type" {
-  type    = string
-  default = "application"
+variable "suga" {
+  type = object({
+    stack_id = string
+  })
 }
 
 variable "name" {
   type = string
+}
+
+variable "load_balancer_type" {
+  type    = string
+  default = "application"
 }
 
 variable "listener_port" {
