@@ -181,6 +181,10 @@ resource "aws_lambda_function" "origin_request" {
   timeout          = 5
   memory_size      = 128
   publish          = true
+
+  timeouts {
+    delete = "20m"
+  }
 }
 
 resource "aws_lambda_permission" "allow_cloudfront_origin_request" {
