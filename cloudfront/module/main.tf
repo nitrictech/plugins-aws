@@ -187,6 +187,8 @@ resource "aws_lambda_function" "origin_request" {
   }
 }
 
+
+
 resource "aws_lambda_permission" "allow_cloudfront_origin_request" {
   count         = length(local.lambda_origins) > 0 ? 1 : 0
   region        = "us-east-1"
@@ -436,6 +438,24 @@ resource "aws_cloudfront_distribution" "distribution" {
   }
 
   dynamic "origin" {
+    for_each = aws_lambda_function_url.default_origin_shim
+
+    content {
+      domain_name              = split("/", origin.value.function_url)[2]
+      origin_id                = "default-lambda-shim"
+      origin_access_control_id = aws_cloudfront_origin_access_control.lambda_oac[0].id
+
+      custom_origin_config {
+        origin_read_timeout    = 30
+        origin_protocol_policy = "https-only"
+        origin_ssl_protocols   = ["TLSv1.2", "SSLv3"]
+        http_port              = 80
+        https_port             = 443
+      }
+    }
+  }
+
+  dynamic "origin" {
     for_each = local.vpc_origins
 
     content {
@@ -560,7 +580,7 @@ resource "aws_cloudfront_distribution" "distribution" {
   default_cache_behavior {
     allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods         = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id       = keys(local.default_origin)[0]
+    target_origin_id       = keys(local.actual_default_origin)[0]
     viewer_protocol_policy = "redirect-to-https"
 
     # Add Lambda@Edge for auth preservation and webhook signing (only if not a Lambda origin and Lambda@Edge exists)
