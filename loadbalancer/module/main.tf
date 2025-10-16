@@ -8,12 +8,6 @@ resource "aws_lb" "lb" {
   drop_invalid_header_fields = true
 }
 
-# Get managed prefix lists by name
-data "aws_ec2_managed_prefix_list" "prefix_lists" {
-  for_each = toset(var.prefix_list_names)
-  name     = each.key
-}
-
 # Create shared HTTP listener for services
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.lb.arn
@@ -29,9 +23,4 @@ resource "aws_lb_listener" "http" {
       status_code  = "404"
     }
   }
-}
-
-data "aws_security_group" "groups" {
-  count = length(var.security_groups)
-  id    = var.security_groups[count.index]
 }
