@@ -1,0 +1,45 @@
+name: rds-database
+display_name: RDS PostgreSQL Database
+type: database
+description: "Creates a PostgreSQL database on an existing RDS instance with automatic credential generation and service injection"
+icon: ./icon.svg
+deployment:
+  terraform: ./module
+
+inputs:
+  rds_instance_endpoint:
+    type: string
+    required: true
+    description: "Connection endpoint of the RDS instance in format hostname:port (e.g. `mydb.abc123.us-east-1.rds.amazonaws.com:5432`)"
+
+  codebuild_project_name:
+    type: string
+    required: true
+    description: "Name of the CodeBuild project for database operations (from RDS instance)"
+
+  database_name:
+    type: string
+    required: false
+    description: "Name of the database to create. If not specified, uses stack_id and resource name (e.g. `myapp_db`)"
+
+  database_owner:
+    type: string
+    required: false
+    description: "Username for the database owner role. If not specified, a unique role is created (e.g. `myapp_user`)"
+
+outputs:
+  database_name:
+    type: string
+    description: "Name of the created database"
+
+  database_owner:
+    type: string
+    description: "Username of the database owner"
+
+  database_password:
+    type: string
+    description: "Password for the database owner (sensitive)"
+
+  connection_string:
+    type: string
+    description: "PostgreSQL connection string for the database"

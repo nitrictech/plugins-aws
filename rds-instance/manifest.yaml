@@ -1,0 +1,224 @@
+name: rds-instance
+display_name: RDS PostgreSQL Instance
+type: infra
+description: "Provisions AWS RDS PostgreSQL instance with automated backups, encryption, and multi-AZ support. Use with rds-database plugin to create individual databases."
+icon: ./icon.svg
+deployment:
+  terraform: ./module
+
+inputs:
+  identifier:
+    type: string
+    required: true
+    description: "Unique identifier for the RDS instance (e.g. `myapp-db`)"
+
+  engine_version:
+    type: string
+    required: false
+    description: "PostgreSQL engine version (e.g. `15.4`, `16.1`). If not specified, uses the latest version"
+
+  instance_class:
+    type: string
+    description: "Compute and memory capacity - `db.t3.micro` (free tier, 2vCPU, 1GB RAM), `db.t3.small` (2vCPU, 2GB), `db.t3.medium` (2vCPU, 4GB), `db.m5.large` (2vCPU, 8GB), `db.m5.xlarge` (4vCPU, 16GB) (e.g. `db.t3.small`)"
+
+  allocated_storage:
+    type: number
+    required: false
+    description: "Initial storage size in GB, 20-65536. Can grow with max_allocated_storage (e.g. `20`)"
+
+  max_allocated_storage:
+    type: number
+    required: false
+    description: "Maximum storage autoscaling limit in GB. Set higher than allocated_storage to enable autoscaling (e.g. `100`)"
+
+  storage_type:
+    type: string
+    required: false
+    description: 'Storage type: `gp2` (general SSD, legacy), `gp3` (newer SSD with better performance), `io1` (provisioned IOPS) (e.g. `gp3`)'
+
+  storage_encrypted:
+    type: bool
+    required: false
+    description: "`true` (recommended) encrypts database storage at rest using AWS KMS. `false` leaves data unencrypted"
+
+  kms_key_id:
+    type: string
+    required: false
+    description: "ARN of AWS KMS key for encryption. If storage_encrypted is true and this is not set, uses default AWS RDS key (e.g. `arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012`)"
+
+  database_name:
+    type: string
+    required: false
+    description: "Initial database name to create. At least one database must exist for PostgreSQL provider to connect (e.g. `postgres`)"
+
+  master_username:
+    type: string
+    description: "Master username for database access (e.g. `postgres`)"
+
+  port:
+    type: number
+    required: false
+    description: "TCP port for database connections (default: 5432)"
+
+  multi_az:
+    type: bool
+    required: false
+    description: "`false` (default) single AZ deployment for dev/test. `true` enables multi-AZ with automatic failover for production high availability"
+
+  publicly_accessible:
+    type: bool
+    required: false
+    description: "`false` (recommended) keeps database private within VPC. `true` assigns public IP - use only for development, not production"
+
+  vpc_id:
+    type: string
+    required: true
+    description: "VPC ID where RDS will be deployed (e.g. `vpc-0123456789abcdef0`)"
+
+  subnet_ids:
+    type: list(string)
+    required: true
+    description: 'List of subnet IDs for RDS subnet group, must span at least 2 availability zones (e.g. `["subnet-abc123", "subnet-def456"]`)'
+
+  allowed_security_group_ids:
+    type: list(string)
+    required: false
+    description: 'Security group IDs allowed to connect to the database (e.g. `["sg-lambda-app", "sg-fargate-backend"]`)'
+
+  allowed_cidr_blocks:
+    type: list(string)
+    required: false
+    description: 'CIDR blocks allowed to connect to the database (e.g. `["10.0.1.0/24", "10.0.2.0/24"]`)'
+
+  backup_retention_period:
+    type: number
+    required: false
+    description: "Days to retain automated backups, 0-35. 0 disables backups (not recommended). 7+ required for point-in-time recovery (e.g. `7`)"
+
+  backup_window:
+    type: string
+    required: false
+    description: 'Daily backup time window in UTC format HH:MM-HH:MM, must be at least 30 minutes (e.g. `03:00-04:00`)'
+
+  maintenance_window:
+    type: string
+    required: false
+    description: 'Weekly maintenance window in UTC format ddd:HH:MM-ddd:HH:MM, must not overlap backup_window (e.g. `mon:04:00-mon:05:00`)'
+
+  skip_final_snapshot:
+    type: bool
+    required: false
+    description: "`false` (recommended) creates final snapshot before deletion. `true` skips snapshot - use only for dev/test databases"
+
+  final_snapshot_identifier:
+    type: string
+    required: false
+    description: "Name for final snapshot when database is deleted. Required if skip_final_snapshot is false (e.g. `myapp-db-final-snapshot`)"
+
+  deletion_protection:
+    type: bool
+    required: false
+    description: "`false` (default) allows database deletion. `true` prevents accidental deletion - recommended for production databases"
+
+  enabled_cloudwatch_logs_exports:
+    type: list(string)
+    required: false
+    description: 'PostgreSQL log types to export to CloudWatch (e.g. `["postgresql"]` for general logs, `["postgresql", "upgrade"]` for logs and upgrade logs)'
+
+  monitoring_interval:
+    type: number
+    required: false
+    description: "Enhanced monitoring interval in seconds: 0 (disabled), 1, 5, 10, 15, 30, 60. Values >0 require monitoring_role_arn (e.g. `60`)"
+
+  monitoring_role_arn:
+    type: string
+    required: false
+    description: "IAM role ARN for enhanced monitoring. Required if monitoring_interval > 0 (e.g. `arn:aws:iam::123456789012:role/rds-monitoring-role`)"
+
+  performance_insights_enabled:
+    type: bool
+    required: false
+    description: "`false` (default) disables performance insights. `true` enables advanced performance monitoring (additional costs apply)"
+
+  performance_insights_retention_period:
+    type: number
+    required: false
+    description: "Days to retain performance insights data: 7 (free tier) or 731 (2 years, additional cost). Only applies if performance_insights_enabled is true (e.g. `7`)"
+
+  auto_minor_version_upgrade:
+    type: bool
+    required: false
+    description: "`true` (default) automatically applies minor engine upgrades during maintenance window. `false` requires manual upgrades"
+
+  apply_immediately:
+    type: bool
+    required: false
+    description: "`false` (default) applies changes during maintenance window. `true` applies changes immediately (may cause downtime)"
+
+  parameter_group_name:
+    type: string
+    required: false
+    description: "Custom DB parameter group name for PostgreSQL configuration. If not specified, uses default parameter group (e.g. `custom-postgres15-params`)"
+
+  tags:
+    type: map(string)
+    required: false
+    description: 'Resource tags for organization and cost tracking (e.g. `{"Environment": "production", "Application": "web-api"}`)'
+
+  enable_ssm_bastion_access:
+    type: bool
+    required: false
+    description: "`false` (default) disables SSM bastion resources. `true` creates a security group and IAM instance profile that users can attach to their own EC2 instances for SSM Session Manager port forwarding access to the database"
+
+outputs:
+  db_instance_id:
+    type: string
+    description: "Unique identifier of the RDS instance"
+
+  db_instance_arn:
+    type: string
+    description: "Amazon Resource Name (ARN) of the RDS instance"
+
+  db_instance_endpoint:
+    type: string
+    description: "Connection endpoint in format hostname:port (e.g. mydb.abc123.us-east-1.rds.amazonaws.com:5432)"
+
+  db_instance_name:
+    type: string
+    description: "Name of the initial database created"
+
+  db_instance_username:
+    type: string
+    description: "Master username for database access"
+
+  db_instance_resource_id:
+    type: string
+    description: "Resource ID of the RDS instance (format: db-ABCDEFGHIJKLMNOPQRS)"
+
+  db_subnet_group_id:
+    type: string
+    description: "ID of the DB subnet group"
+
+  db_security_group_id:
+    type: string
+    description: "ID of the security group attached to the RDS instance"
+
+  db_master_password:
+    type: string
+    description: "Master password for the RDS instance (sensitive)"
+
+  codebuild_project_name:
+    type: string
+    description: "Name of the CodeBuild project for database operations"
+
+  codebuild_project_arn:
+    type: string
+    description: "ARN of the CodeBuild project for database operations"
+
+  bastion_security_group_id:
+    type: string
+    description: "Security group ID for SSM bastion instances (only created if enable_ssm_bastion_access is true). Attach this to EC2 instances that need database access via SSM port forwarding"
+
+  bastion_instance_profile_name:
+    type: string
+    description: "IAM instance profile name for SSM bastion instances (only created if enable_ssm_bastion_access is true). Attach this to EC2 instances to enable SSM Session Manager access"
