@@ -68,17 +68,6 @@ resource "aws_security_group_rule" "self" {
   description       = "Allow PostgreSQL access within security group"
 }
 
-# Egress rule (allows DB to make outbound connections if needed)
-resource "aws_security_group_rule" "egress" {
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.this.id
-  description       = "Allow all outbound traffic"
-}
-
 # Security Group for SSM Bastion instances (optional)
 resource "aws_security_group" "bastion" {
   count = var.enable_ssm_bastion_access ? 1 : 0
