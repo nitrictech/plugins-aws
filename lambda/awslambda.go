@@ -20,9 +20,6 @@ func (a *awslambdaService) Start(proxy service.Proxy) error {
 	a.proxy = proxy
 
 	lambda.Start(func(ctx context.Context, evt json.RawMessage) (interface{}, error) {
-		// Try to parse as API Gateway v2 HTTP event first
-		fmt.Println("handling event", string(evt))
-
 		var httpEvent events.LambdaFunctionURLRequest
 		var scheduleEvent ScheduleEventDetail
 		var err error
