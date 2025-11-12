@@ -1,7 +1,7 @@
 name: rds-instance
 display_name: RDS PostgreSQL Instance
 type: infra
-description: "Provisions AWS RDS PostgreSQL instance with automated backups, encryption, and multi-AZ support. Use with rds-database plugin to create individual databases."
+description: "Provisions an AWS RDS PostgreSQL instance with optional automated backups, encryption, and multi-AZ support. Use with rds-database plugin to create individual databases."
 icon: ./icon.svg
 deployment:
   terraform: ./module
