@@ -1,3 +1,7 @@
+# Get the current AWS region
+data "aws_region" "current" {
+}
+
 # Local variables
 locals {
   database_name  = var.database_name != null ? var.database_name : replace("${var.suga.stack_id}_${var.suga.name}", "-", "_")
@@ -35,6 +39,7 @@ resource "null_resource" "create_database" {
     interpreter = ["bash", "-c"]
     command = <<EOF
       BUILD_ID=$(aws codebuild start-build \
+        --region ${data.aws_region.current.id} \
         --project-name ${var.codebuild_project_name} \
         --environment-variables-override '${jsonencode([
     {
@@ -54,7 +59,7 @@ resource "null_resource" "create_database" {
       STATUS="IN_PROGRESS"
       while [[ $STATUS == "IN_PROGRESS" ]]; do
         sleep 5
-        STATUS=$(aws codebuild batch-get-builds --ids $BUILD_ID --query 'builds[0].buildStatus' --output text)
+        STATUS=$(aws codebuild batch-get-builds --region ${data.aws_region.current.id} --ids $BUILD_ID --query 'builds[0].buildStatus' --output text)
       done
       if [[ $STATUS != "SUCCEEDED" ]]; then
         echo "Build failed with status $STATUS"
