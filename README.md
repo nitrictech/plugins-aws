@@ -25,9 +25,14 @@ Terraform modules that provide a consistent interface for provisioning AWS cloud
 - **Lambda** - Serverless functions with container support and VPC integration
 - **Fargate** - Container orchestration with ECS and load balancer integration
 
+### Database
+- **RDS Instance** - Managed PostgreSQL database instances with automated backups
+- **RDS Database** - PostgreSQL database and role provisioning within RDS instances
+
 ### Networking
 - **VPC** - Virtual private clouds with public/private subnets and NAT gateways
 - **Load Balancer** - Application and network load balancers for traffic distribution
+- **Security Group Rule** - Firewall rules for controlling inbound and outbound traffic
 
 ### Identity
 - **IAM Role** - Identity and access management roles with trust policies
