@@ -68,6 +68,20 @@ resource "aws_security_group_rule" "self" {
   description       = "Allow PostgreSQL access within security group"
 }
 
+# Allows codebuild job to pull images and updates
+# More open to allow overriding job externally for additional work/image runs in future
+# e.g. if a user wants to run containerised migrations in the same CodeBuild project
+# trivy:ignore
+resource "aws_security_group_rule" "egress" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.this.id
+  description       = "Allow all outbound traffic"
+}
+
 # Security Group for SSM Bastion instances (optional)
 resource "aws_security_group" "bastion" {
   count = var.enable_ssm_bastion_access ? 1 : 0
