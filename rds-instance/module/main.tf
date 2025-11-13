@@ -71,7 +71,7 @@ resource "aws_security_group_rule" "self" {
 # Allows codebuild job to pull images and updates
 # More open to allow overriding job externally for additional work/image runs in future
 # e.g. if a user wants to run containerised migrations in the same CodeBuild project
-# trivy:ignore
+# trivy:ignore:avd-aws-0104
 resource "aws_security_group_rule" "egress" {
   type              = "egress"
   from_port         = 0
